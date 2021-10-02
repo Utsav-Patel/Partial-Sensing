@@ -15,6 +15,33 @@ def avg(lst: list):
     return sum(lst) / len(lst)
 
 
+def manhattan_distance(pos1: tuple, pos2: tuple):
+    """
+    Compute Manhattan distance between two points
+    :param pos1: Coordinate of first point
+    :param pos2: Coordinate of second point
+    :return: Manhattan distance between two points
+    """
+    distance = 0
+    for ind in range(len(pos1)):
+        distance += abs(pos1[ind] - pos2[ind])
+    return distance
+
+
+def compute_heuristics(maze: list, h_func):
+    """
+    Compute Heuristic for the current maze
+    :param maze: maze of type list
+    :param h_func: Heuristic function we want to use
+    :return: None as we are updating in the same maze object
+    """
+
+    for row in range(NUM_ROWS):
+        for col in range(NUM_COLS):
+            if not maze[row][col].is_blocked:
+                maze[row][col].h = h_func((row, col), GOAL_POSITION_OF_AGENT)
+
+
 def generate_grid_manually():
     """
     This is the function to generate grid manually. This is helpful for the initial testing and problem 1.

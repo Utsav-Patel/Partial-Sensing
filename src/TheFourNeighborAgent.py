@@ -11,5 +11,6 @@ class TheFourNeighborAgent(Agent):
     def execution(self, full_maze: np.array):
         current_path, num_backtracks = forward_execution(self.maze, full_maze, self.current_position, self.parents,
                                                          want_to_explore_field_of_view=True)
+        self.current_position = current_path[-1]
         self.final_paths.append(current_path)
         self.num_backtracks += num_backtracks
