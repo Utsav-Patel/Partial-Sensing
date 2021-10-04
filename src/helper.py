@@ -49,7 +49,7 @@ def generate_grid_manually():
     """
     array = np.zeros((NUM_ROWS, NUM_COLS))
 
-    array[1][1] = 1
+    array[1][0] = 1
     array[1][2] = 1
     array[1][3] = 1
     array[2][3] = 1

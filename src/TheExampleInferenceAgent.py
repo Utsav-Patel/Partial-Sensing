@@ -38,22 +38,22 @@ class TheExampleInferenceAgent(Agent):
                             continue
                         if self.maze[current_node[0]][current_node[1]].is_blocked:
                             self.maze[neighbor[0]][neighbor[1]].num_confirmed_blocked += 1
-                            self.maze[neighbor[0]][neighbor[1]].num_sensed_blocked -= 1
                         else:
                             self.maze[neighbor[0]][neighbor[1]].num_confirmed_unblocked += 1
-                            self.maze[neighbor[0]][neighbor[1]].num_sensed_unblocked -= 1
 
                         if not (neighbor in items_in_the_queue):
                             items_in_the_queue.add(neighbor)
                             inference_items.put(neighbor)
 
             if self.maze[current_node[0]][current_node[1]].is_visited:
-                if ((self.maze[current_node[0]][current_node[1]].num_sensed_blocked == 0) and
-                        (self.maze[current_node[0]][current_node[1]].num_sensed_unblocked != 0)) or \
-                        ((self.maze[current_node[0]][current_node[1]].num_sensed_unblocked == 0) and
-                         (self.maze[current_node[0]][current_node[1]].num_sensed_blocked != 0)):
-                    # self.maze[current_node[0]][current_node[1]].num_sensed_unblocked = 0
-                    # self.maze[current_node[0]][current_node[1]].num_sensed_blocked = 0
+                if ((self.maze[current_node[0]][current_node[1]].num_sensed_blocked ==
+                     self.maze[current_node[0]][current_node[1]].num_confirmed_blocked) and
+                        (self.maze[current_node[0]][current_node[1]].num_sensed_unblocked !=
+                         self.maze[current_node[0]][current_node[1]].num_confirmed_unblocked)) or \
+                        ((self.maze[current_node[0]][current_node[1]].num_sensed_unblocked ==
+                          self.maze[current_node[0]][current_node[1]].num_confirmed_unblocked) and
+                         (self.maze[current_node[0]][current_node[1]].num_sensed_blocked !=
+                          self.maze[current_node[0]][current_node[1]].num_confirmed_blocked)):
 
                     for row in range(-1, 2):
                         for col in range(-1, 2):
@@ -65,6 +65,31 @@ class TheExampleInferenceAgent(Agent):
                                 items_in_the_queue.add(neighbor)
                                 inference_items.put(neighbor)
 
+    def sense_current_node(self, current_position: tuple, full_maze: np.array):
+
+        for row in range(-1, 2):
+            for col in range(-1, 2):
+                neighbor = (current_position[0] + row, current_position[1] + col)
+
+                if current_position == neighbor:
+                    continue
+
+                if check(neighbor):
+                    self.maze[current_position[0]][current_position[1]].num_neighbor += 1
+
+                    if self.maze[neighbor[0]][neighbor[1]].is_confirmed:
+                        if self.maze[neighbor[0]][neighbor[1]].is_blocked:
+                            self.maze[current_position[0]][current_position[1]].num_confirmed_blocked += 1
+                            self.maze[current_position[0]][current_position[1]].num_sensed_blocked += 1
+                        else:
+                            self.maze[current_position[0]][current_position[1]].num_confirmed_unblocked += 1
+                            self.maze[current_position[0]][current_position[1]].num_sensed_unblocked += 1
+                    else:
+                        if full_maze[neighbor[0]][neighbor[1]] == 1:
+                            self.maze[current_position[0]][current_position[1]].num_sensed_blocked += 1
+                        else:
+                            self.maze[current_position[0]][current_position[1]].num_sensed_unblocked += 1
+
     def execution(self, full_maze: np.array):
         children = parent_to_child_dict(self.parents, GOAL_POSITION_OF_AGENT)
         current_position = self.current_position
@@ -74,29 +99,9 @@ class TheExampleInferenceAgent(Agent):
         while current_position != children[current_position]:
 
             if not self.maze[current_position[0]][current_position[1]].is_visited:
+                self.maze[current_position[0]][current_position[1]].is_visited = True
+                self.sense_current_node(current_position, full_maze)
 
-                for row in range(-1, 2):
-                    for col in range(-1, 2):
-                        neighbor = (current_position[0] + row, current_position[1] + col)
-
-                        if current_position == neighbor:
-                            continue
-
-                        if check(neighbor):
-                            self.maze[current_position[0]][current_position[1]].num_neighbor += 1
-
-                            if self.maze[neighbor[0]][neighbor[1]].is_confirmed:
-                                if self.maze[neighbor[0]][neighbor[1]].is_blocked:
-                                    self.maze[current_position[0]][current_position[1]].num_confirmed_blocked += 1
-                                else:
-                                    self.maze[current_position[0]][current_position[1]].num_confirmed_unblocked += 1
-                            else:
-                                if full_maze[neighbor[0]][neighbor[1]] == 1:
-                                    self.maze[current_position[0]][current_position[1]].num_sensed_blocked += 1
-                                else:
-                                    self.maze[current_position[0]][current_position[1]].num_sensed_unblocked += 1
-
-            self.maze[current_position[0]][current_position[1]].is_visited = True
             self.inference(current_position, full_maze)
 
             if full_maze[children[current_position][0]][children[current_position][1]] == 1:
