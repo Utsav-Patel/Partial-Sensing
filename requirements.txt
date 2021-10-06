@@ -6,3 +6,4 @@ wheel==0.37.0
 wincertstore==0.2
 
 sortedcontainers==2.4.0
+matplotlib==3.4.3

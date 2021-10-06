@@ -1,7 +1,10 @@
-from sortedcontainers import SortedSet
-from constants import NUM_ROWS, NUM_COLS, X, Y, GOAL_POSITION_OF_AGENT, STARTING_POSITION_OF_AGENT
 import random
 import numpy as np
+import matplotlib.pyplot as plt
+from sortedcontainers import SortedSet
+from queue import Queue
+
+from constants import NUM_ROWS, NUM_COLS, X, Y, GOAL_POSITION_OF_AGENT, STARTING_POSITION_OF_AGENT, INF
 
 
 def avg(lst: list):
@@ -83,6 +86,82 @@ def check(current_position: tuple):
     if (0 <= current_position[0] < NUM_ROWS) and (0 <= current_position[1] < NUM_COLS):
         return True
     return False
+
+
+def length_of_path_from_source_to_goal(maze_array: np.array, start_pos: tuple, goal_pos: tuple):
+    """
+    This function will return length of path from source to goal if it exists otherwise it will return INF
+    :param maze_array: binary Maze Array
+    :param start_pos: Starting position of the maze from where you want to start
+    :param goal_pos: Goal position of the maze where you want to reach
+    :return: Shortest distance from the source to goal on the given maze array
+    """
+
+    # Initialize queue to compute distance
+    q = Queue()
+
+    # Initialize distance array
+    distance_array = np.full((NUM_ROWS, NUM_COLS), INF)
+
+    # Adding starting position to the queue and assigning its distance to zero
+    q.put(start_pos)
+    distance_array[start_pos[0]][start_pos[1]] = 0
+
+    # Keep popping value from the queue until it gets empty
+    while not q.empty():
+        current_node = q.get()
+
+        # If goal position is found, we should return its distance
+        if current_node == goal_pos:
+            return distance_array[goal_pos[0]][goal_pos[1]]
+
+        # Iterating over valid neighbours of current node
+        for ind in range(len(X)):
+            neighbour = (current_node[0] + X[ind], current_node[1] + Y[ind])
+            if check(neighbour) and \
+                    (distance_array[neighbour[0]][neighbour[1]] > distance_array[current_node[0]][current_node[1]] + 1)\
+                    and (maze_array[neighbour[0]][neighbour[1]] == 0):
+                q.put(neighbour)
+                distance_array[neighbour[0]][neighbour[1]] = distance_array[current_node[0]][current_node[1]] + 1
+
+    return distance_array[goal_pos[0]][goal_pos[1]]
+
+
+def compute_explored_cells_from_path(paths: list):
+    """
+    This function will compute the trajectory length from the list of paths returned by any repeated forward algorithm
+    :param paths: list of paths
+    :return: trajectory length
+    """
+
+    trajectory_length = 0
+    for path in paths:
+        trajectory_length += len(path)
+    trajectory_length -= len(paths)
+    return trajectory_length
+
+
+def parent_to_child_dict(parent: dict, starting_position: tuple):
+    child = dict()
+
+    child[starting_position] = starting_position
+    cur_pos = starting_position
+
+    # Storing child of each node so we can iterate from start_pos to goal_pos
+    while cur_pos != parent[cur_pos]:
+        child[parent[cur_pos]] = cur_pos
+        cur_pos = parent[cur_pos]
+
+    return child
+
+
+def compute_num_confirmed_cells(maze: list):
+    num_confirmed_cells = 0
+    for row in range(NUM_ROWS):
+        for col in range(NUM_COLS):
+            if maze[row][col].is_confirmed:
+                num_confirmed_cells += 1
+    return num_confirmed_cells
 
 
 def astar_search(maze: list, start_pos: tuple):
@@ -188,20 +267,6 @@ def astar_search(maze: list, start_pos: tuple):
     return parents, num_explored_nodes
 
 
-def parent_to_child_dict(parent: dict, starting_position: tuple):
-    child = dict()
-
-    child[starting_position] = starting_position
-    cur_pos = starting_position
-
-    # Storing child of each node so we can iterate from start_pos to goal_pos
-    while cur_pos != parent[cur_pos]:
-        child[parent[cur_pos]] = cur_pos
-        cur_pos = parent[cur_pos]
-
-    return child
-
-
 def forward_execution(maze: list, maze_array: np.array, start_pos: tuple, parents: dict,
                       want_to_explore_field_of_view: bool, is_backtrack_strategy_on: bool = False):
     """
@@ -235,12 +300,15 @@ def forward_execution(maze: list, maze_array: np.array, start_pos: tuple, parent
         if is_backtrack_strategy_on:
             path_exist_from_the_last_point = 0
 
+        maze[cur_pos[0]][cur_pos[1]].is_confirmed = True
+
         # Explore the field of view and update the blocked nodes if there's any in the path.
         if want_to_explore_field_of_view:
             for ind in range(len(X)):
                 neighbour = (cur_pos[0] + X[ind], cur_pos[1] + Y[ind])
                 if (check(neighbour)) and (maze_array[neighbour[0]][neighbour[1]] == 1):
                     maze[neighbour[0]][neighbour[1]].is_blocked = True
+                    maze[neighbour[0]][neighbour[1]].is_confirmed = True
 
                 # Here, we are finding whether the current node is a part of the dead end or not. If there is a path
                 # exists other than its child and parent, then this node should not be part of dead end because
@@ -266,6 +334,7 @@ def forward_execution(maze: list, maze_array: np.array, start_pos: tuple, parent
 
         # Change the start node to last unblocked node and backtrack if it is set to any positive integer.
         maze[children[cur_pos][0]][children[cur_pos][1]].is_blocked = True
+        maze[children[cur_pos][0]][children[cur_pos][1]].is_confirmed = True
 
         if is_backtrack_strategy_on:
 
@@ -278,3 +347,48 @@ def forward_execution(maze: list, maze_array: np.array, start_pos: tuple, parent
                 current_path.append(cur_pos)
 
     return current_path, num_backtracks
+
+
+def single_plot(x, y, title, xlabel, ylabel, savefig_name, fontsize: int = 10):
+    """
+    This function is used to plot a single plot
+    :param x: X axis list
+    :param y: Y axis list
+    :param title: title of the plot
+    :param xlabel: x-label of the plot
+    :param ylabel: y-label of the plot
+    :param savefig_name: name of the figure which you want to use save
+    :param fontsize: change size of the all font (title, x-label, and y-label)
+    :return:
+    """
+    fig, axs = plt.subplots()
+    axs.plot(x, y, marker='.', ms=10.0, c='blue', mfc='red')
+    axs.set_title(title, fontsize=fontsize)
+    axs.set_xlabel(xlabel, fontsize=fontsize)
+    axs.set_ylabel(ylabel, fontsize=fontsize)
+    plt.savefig(savefig_name)
+    plt.show()
+
+
+def multiple_plot(x, y, title, xlabel, ylabel, savefig_name, legends, fontsize: int = 10):
+    """
+    This function is used to add multiple plots on y axis
+    :param x: X axis list
+    :param y: Y axis list of list
+    :param title: title of the plot
+    :param xlabel: x-label of the plot
+    :param ylabel: y-label of the plot
+    :param savefig_name: name of the figure which you want to use save
+    :param legends: add legends to this multiple plots
+    :param fontsize: change size of the all font (title, x-label, and y-label)
+    :return:
+    """
+    fig, axs = plt.subplots()
+    for array in y:
+        axs.plot(x, array, marker='.', ms=10.0, mfc='red')
+    axs.legend(legends)
+    axs.set_title(title, fontsize=fontsize)
+    axs.set_xlabel(xlabel, fontsize=fontsize)
+    axs.set_ylabel(ylabel, fontsize=fontsize)
+    plt.savefig(savefig_name)
+    plt.show()

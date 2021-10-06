@@ -9,6 +9,7 @@ class TheBlindfoldedAgent(Agent):
         super().__init__()
 
     def execution(self, full_maze: np.array):
+        self.num_astar_calls += 1
         current_path, num_backtracks = forward_execution(self.maze, full_maze, self.current_position, self.parents,
                                                          want_to_explore_field_of_view=False)[:2]
         self.current_position = current_path[-1]
