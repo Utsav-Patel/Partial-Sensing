@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 from sortedcontainers import SortedSet
 from queue import Queue
 
-from constants import NUM_ROWS, NUM_COLS, X, Y, GOAL_POSITION_OF_AGENT, STARTING_POSITION_OF_AGENT, INF
+from constants import NUM_ROWS, NUM_COLS, X, Y, GOAL_POSITION_OF_AGENT, STARTING_POSITION_OF_AGENT, INF, \
+    RELATIVE_POSITION_OF_TWO_MANDATORY_NEIGHBORS, RELATIVE_POSITION_OF_TWO_SENSED_NEIGHBORS, \
+    RELATIVE_POSITION_OF_NEIGHBORS_TO_CHECK, RELATIVE_POSITION_OF_NEIGHBORS_TO_UPDATE
 
 
 def avg(lst: list):
@@ -119,7 +121,7 @@ def length_of_path_from_source_to_goal(maze_array: np.array, start_pos: tuple, g
         for ind in range(len(X)):
             neighbour = (current_node[0] + X[ind], current_node[1] + Y[ind])
             if check(neighbour) and \
-                    (distance_array[neighbour[0]][neighbour[1]] > distance_array[current_node[0]][current_node[1]] + 1)\
+                    (distance_array[neighbour[0]][neighbour[1]] > distance_array[current_node[0]][current_node[1]] + 1) \
                     and (maze_array[neighbour[0]][neighbour[1]] == 0):
                 q.put(neighbour)
                 distance_array[neighbour[0]][neighbour[1]] = distance_array[current_node[0]][current_node[1]] + 1
@@ -392,3 +394,201 @@ def multiple_plot(x, y, title, xlabel, ylabel, savefig_name, legends, fontsize: 
     axs.set_ylabel(ylabel, fontsize=fontsize)
     plt.savefig(savefig_name)
     plt.show()
+
+
+def sense_current_node(maze, current_position: tuple, full_maze: np.array):
+    for row in range(-1, 2):
+        for col in range(-1, 2):
+            neighbor = (current_position[0] + row, current_position[1] + col)
+
+            if current_position == neighbor:
+                continue
+
+            if check(neighbor):
+                maze[current_position[0]][current_position[1]].num_neighbor += 1
+
+                if maze[neighbor[0]][neighbor[1]].is_confirmed:
+                    if maze[neighbor[0]][neighbor[1]].is_blocked:
+                        maze[current_position[0]][current_position[1]].num_confirmed_blocked += 1
+                        maze[current_position[0]][current_position[1]].num_sensed_blocked += 1
+                    else:
+                        maze[current_position[0]][current_position[1]].num_confirmed_unblocked += 1
+                        maze[current_position[0]][current_position[1]].num_sensed_unblocked += 1
+                else:
+                    if full_maze[neighbor[0]][neighbor[1]] == 1:
+                        maze[current_position[0]][current_position[1]].num_sensed_blocked += 1
+                    else:
+                        maze[current_position[0]][current_position[1]].num_sensed_unblocked += 1
+
+
+def can_infer(num_sensed_blocked: int, num_confirmed_blocked: int, num_sensed_unblocked: int,
+              num_confirmed_unblocked: int):
+    if ((num_sensed_blocked == num_confirmed_blocked) and (num_sensed_unblocked > num_confirmed_unblocked)) or \
+            ((num_sensed_unblocked == num_confirmed_unblocked) and (num_sensed_blocked > num_confirmed_blocked)):
+        return True
+    return False
+
+
+def find_block_while_inference(maze: list, current_position: tuple, full_maze: np.array, entire_trajectory_nodes=None,
+                               want_to_use_one_node_inference_strategy: bool = True,
+                               want_to_use_two_node_inference_strategy: bool = False,
+                               want_to_use_three_node_inference_strategy: bool = False):
+    if entire_trajectory_nodes is None:
+        entire_trajectory_nodes = set()
+
+    inference_items = Queue()
+    items_in_the_queue = set()
+    is_block_node_in_current_path = False
+
+    inference_items.put(current_position)
+    items_in_the_queue.add(current_position)
+
+    while not inference_items.empty():
+        current_node = inference_items.get()
+        items_in_the_queue.remove(current_node)
+
+        if not maze[current_node[0]][current_node[1]].is_confirmed:
+
+            maze[current_node[0]][current_node[1]].is_confirmed = True
+
+            if full_maze[current_node[0]][current_node[1]] == 1:
+                maze[current_node[0]][current_node[1]].is_blocked = True
+                if current_node in entire_trajectory_nodes:
+                    is_block_node_in_current_path = True
+            else:
+                maze[current_node[0]][current_node[1]].is_blocked = False
+
+            for row in range(-1, 2):
+                for col in range(-1, 2):
+                    neighbor = (current_node[0] + row, current_node[1] + col)
+                    if (not check(neighbor)) or (current_node == neighbor) or \
+                            (not maze[neighbor[0]][neighbor[1]].is_visited):
+                        continue
+                    if maze[current_node[0]][current_node[1]].is_blocked:
+                        maze[neighbor[0]][neighbor[1]].num_confirmed_blocked += 1
+                    else:
+                        maze[neighbor[0]][neighbor[1]].num_confirmed_unblocked += 1
+
+                    if not (neighbor in items_in_the_queue):
+                        items_in_the_queue.add(neighbor)
+                        inference_items.put(neighbor)
+
+        if maze[current_node[0]][current_node[1]].is_visited:
+            if want_to_use_one_node_inference_strategy:
+                if ((maze[current_node[0]][current_node[1]].num_sensed_blocked ==
+                     maze[current_node[0]][current_node[1]].num_confirmed_blocked) and
+                    (maze[current_node[0]][current_node[1]].num_sensed_unblocked !=
+                     maze[current_node[0]][current_node[1]].num_confirmed_unblocked)) or \
+                        ((maze[current_node[0]][current_node[1]].num_sensed_unblocked ==
+                          maze[current_node[0]][current_node[1]].num_confirmed_unblocked) and
+                         (maze[current_node[0]][current_node[1]].num_sensed_blocked !=
+                          maze[current_node[0]][current_node[1]].num_confirmed_blocked)):
+
+                    for row in range(-1, 2):
+                        for col in range(-1, 2):
+                            neighbor = (current_node[0] + row, current_node[1] + col)
+
+                            if check(neighbor) and (current_node != neighbor) and \
+                                    (neighbor not in items_in_the_queue) and \
+                                    (not maze[neighbor[0]][neighbor[1]].is_confirmed):
+                                items_in_the_queue.add(neighbor)
+                                inference_items.put(neighbor)
+
+            if want_to_use_three_node_inference_strategy:
+                for index in range(len(RELATIVE_POSITION_OF_TWO_MANDATORY_NEIGHBORS)):
+
+                    two_mandatory_neighbors = RELATIVE_POSITION_OF_TWO_MANDATORY_NEIGHBORS[index]
+                    num_of_neighbors = 0
+
+                    for relative_position in two_mandatory_neighbors:
+                        neighbor = (current_node[0] + relative_position[0], current_node[1] + relative_position[1])
+                        if check(neighbor) and maze[neighbor[0]][neighbor[1]].is_visited:
+                            num_of_neighbors += 1
+
+                    if num_of_neighbors == 2:
+                        num_sensed_blocked = maze[current_node[0]][current_node[1]].num_sensed_blocked
+                        num_confirmed_blocked = maze[current_node[0]][current_node[1]].num_confirmed_blocked
+                        num_sensed_unblocked = maze[current_node[0]][current_node[1]].num_sensed_unblocked
+                        num_confirmed_unblocked = maze[current_node[0]][current_node[1]].num_confirmed_unblocked
+
+                        if maze[current_node[0]][current_node[1]].is_blocked:
+                            num_confirmed_blocked += 1
+                        else:
+                            num_confirmed_unblocked += 1
+
+                        for ind in range(len(two_mandatory_neighbors)):
+                            relative_position = two_mandatory_neighbors[ind]
+                            neighbor = (current_node[0] + relative_position[0], current_node[1] + relative_position[1])
+                            if ind == 0:
+                                factor = -1
+                            else:
+                                factor = 1
+                            num_sensed_blocked += factor * maze[neighbor[0]][neighbor[1]].num_sensed_blocked
+                            num_confirmed_blocked += factor * maze[neighbor[0]][neighbor[1]].num_confirmed_blocked
+                            num_sensed_unblocked += factor * maze[neighbor[0]][neighbor[1]].num_sensed_unblocked
+                            num_confirmed_unblocked += factor * maze[neighbor[0]][neighbor[1]].num_confirmed_unblocked
+
+                            if maze[neighbor[0]][neighbor[1]].is_blocked:
+                                num_confirmed_blocked += factor
+                            else:
+                                num_confirmed_unblocked += factor
+
+                        if can_infer(num_sensed_blocked, num_confirmed_blocked, num_sensed_unblocked, num_confirmed_unblocked):
+
+                            for relative_position in RELATIVE_POSITION_OF_TWO_SENSED_NEIGHBORS[index]:
+                                neighbor = (current_node[0] + relative_position[0], current_node[1] + relative_position[1])
+
+                                if check(neighbor) and (neighbor not in items_in_the_queue) and \
+                                        (not maze[neighbor[0]][neighbor[1]].is_confirmed):
+                                    items_in_the_queue.add(neighbor)
+                                    inference_items.put(neighbor)
+
+            if want_to_use_two_node_inference_strategy:
+                for index in range(len(X)):
+                    neighbor = (current_node[0] + X[index], current_node[1] + Y[index])
+                    if check(neighbor) and maze[neighbor[0]][neighbor[1]].is_visited:
+                        num_not_confirmed_cells = 0
+
+                        num_sensed_blocked = 0
+                        num_confirmed_blocked = 0
+                        num_sensed_unblocked = 0
+                        num_confirmed_unblocked = 0
+
+                        # Can comment the below two if and else
+                        if maze[current_node[0]][current_node[1]].is_blocked:
+                            num_confirmed_blocked += 1
+                        else:
+                            num_confirmed_unblocked += 1
+
+                        if maze[neighbor[0]][neighbor[1]].is_blocked:
+                            num_confirmed_blocked -= 1
+                        else:
+                            num_confirmed_unblocked -= 1
+
+                        for relative_position in RELATIVE_POSITION_OF_NEIGHBORS_TO_CHECK[index]:
+                            cell = (current_node[0] + relative_position[0], current_node[1] + relative_position[1])
+                            if check(cell):
+                                if not maze[cell[0]][cell[1]].is_confirmed:
+                                    num_not_confirmed_cells += 1
+                                elif maze[cell[0]][cell[1]].is_blocked:
+                                    num_confirmed_blocked += 1
+                                else:
+                                    num_confirmed_unblocked += 1
+
+                        if num_not_confirmed_cells == 0:
+                            num_sensed_blocked += maze[current_node[0]][current_node[1]].num_sensed_blocked - maze[neighbor[0]][neighbor[1]].num_sensed_blocked
+                            num_confirmed_blocked += maze[current_node[0]][current_node[1]].num_confirmed_blocked - maze[neighbor[0]][neighbor[1]].num_confirmed_blocked
+                            num_sensed_unblocked += maze[current_node[0]][current_node[1]].num_sensed_unblocked - maze[neighbor[0]][neighbor[1]].num_sensed_unblocked
+                            num_confirmed_unblocked += maze[current_node[0]][current_node[1]].num_confirmed_unblocked - maze[neighbor[0]][neighbor[1]].num_confirmed_unblocked
+
+                        if can_infer(num_sensed_blocked, num_confirmed_blocked, num_sensed_unblocked, num_confirmed_unblocked):
+
+                            for relative_position in RELATIVE_POSITION_OF_NEIGHBORS_TO_UPDATE[index]:
+                                cell = (current_node[0] + relative_position[0], current_node[1] + relative_position[1])
+
+                                if check(cell) and (cell not in items_in_the_queue) and \
+                                        (not maze[cell[0]][cell[1]].is_confirmed):
+                                    items_in_the_queue.add(cell)
+                                    inference_items.put(cell)
+
+    return is_block_node_in_current_path

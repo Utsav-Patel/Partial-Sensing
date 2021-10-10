@@ -8,21 +8,22 @@ from src.helper import generate_grid_with_probability_p, length_of_path_from_sou
 from constants import LIST_OF_PROBABILITIES, INF, STARTING_POSITION_OF_AGENT, GOAL_POSITION_OF_AGENT, \
     NUM_ITERATION_FOR_EACH_PROBABILITY
 
+from src.Agent import Agent
 from src.TheBlindfoldedAgent import TheBlindfoldedAgent
 from src.TheFourNeighborAgent import TheFourNeighborAgent
 from src.TheExampleInferenceAgent import TheExampleInferenceAgent
-from src.Agent import Agent
+from src.OurOwnInferenceAgent import OurOwnInferenceAgent
 
 # Just printing this to know when the program execution is started
 print('Start running this file at', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
-legends = ['Blinded Folded', 'Four Neighbor', 'Example Inference']
-agents = [TheBlindfoldedAgent(), TheFourNeighborAgent(), TheExampleInferenceAgent()]
-avg_num_explored_cells = [list(), list(), list()]
-avg_num_processed_cells = [list(), list(), list()]
-avg_num_confirmed_cells = [list(), list(), list()]
-avg_num_astar_calls = [list(), list(), list()]
-avg_running_time = [list(), list(), list()]
+legends = ['Blinded Folded', 'Four Neighbor', 'Example Inference', 'Own Inference']
+agents = [TheBlindfoldedAgent(), TheFourNeighborAgent(), TheExampleInferenceAgent(), OurOwnInferenceAgent()]
+avg_num_explored_cells = [list(), list(), list(), list()]
+avg_num_processed_cells = [list(), list(), list(), list()]
+avg_num_confirmed_cells = [list(), list(), list(), list()]
+avg_num_astar_calls = [list(), list(), list(), list()]
+avg_running_time = [list(), list(), list(), list()]
 
 
 def compute_for_particular_agent(agent: Agent, num_explored_cells_list: list, num_processed_cells_list: list,
@@ -47,11 +48,11 @@ def compute_for_particular_agent(agent: Agent, num_explored_cells_list: list, nu
 for probability in LIST_OF_PROBABILITIES:
 
     print('Running for', probability)
-    num_explored_cells = [list(), list(), list()]
-    num_processed_cells = [list(), list(), list()]
-    num_confirmed_cells = [list(), list(), list()]
-    num_astar_calls = [list(), list(), list()]
-    running_time = [list(), list(), list()]
+    num_explored_cells = [list(), list(), list(), list()]
+    num_processed_cells = [list(), list(), list(), list()]
+    num_confirmed_cells = [list(), list(), list(), list()]
+    num_astar_calls = [list(), list(), list(), list()]
+    running_time = [list(), list(), list(), list()]
 
     num_run = 0
 
@@ -81,16 +82,16 @@ for probability in LIST_OF_PROBABILITIES:
 print('Ending running this file at', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
 multiple_plot(LIST_OF_PROBABILITIES, avg_num_explored_cells, "Number of explored cells", "Density",
-              "Num of explored cells", "explored_nodes.png", legends)
+              "Num of explored cells", "explored_nodes" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
 multiple_plot(LIST_OF_PROBABILITIES, avg_num_processed_cells, "Number of processed cells", "Density",
-              "Num of processed cells", "processed_cells.png", legends)
+              "Num of processed cells", "processed_cells" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
 multiple_plot(LIST_OF_PROBABILITIES, avg_num_confirmed_cells, "Number of confirmed cells", "Density",
-              "Num of confirmed cells", "confirmed_cells.png", legends)
+              "Num of confirmed cells", "confirmed_cells" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
 multiple_plot(LIST_OF_PROBABILITIES, avg_num_astar_calls, "Number of astar calls", "Density",
-              "Num of astar calls", "num_astar_calls.png", legends)
+              "Num of astar calls", "num_astar_calls" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
 multiple_plot(LIST_OF_PROBABILITIES, avg_running_time, "Running time", "Density",
-              "Running time (in seconds)", "running_time.png", legends)
+              "Running time (in seconds)", "running_time" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)

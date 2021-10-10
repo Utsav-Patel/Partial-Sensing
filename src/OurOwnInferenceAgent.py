@@ -2,10 +2,10 @@ import numpy as np
 
 from src.Agent import Agent
 from src.helper import parent_to_child_dict, sense_current_node, find_block_while_inference
-from constants import GOAL_POSITION_OF_AGENT, NUM_ROWS, NUM_COLS
+from constants import GOAL_POSITION_OF_AGENT
 
 
-class TheExampleInferenceAgent(Agent):
+class OurOwnInferenceAgent(Agent):
     def __init__(self):
         super().__init__()
 
@@ -31,11 +31,15 @@ class TheExampleInferenceAgent(Agent):
                 self.maze[current_position[0]][current_position[1]].is_visited = True
                 sense_current_node(self.maze, current_position, full_maze)
 
-            if find_block_while_inference(self.maze, current_position, full_maze, entire_trajectory_nodes):
+            if find_block_while_inference(self.maze, current_position, full_maze, entire_trajectory_nodes, True, True, True):
                 break
 
             if full_maze[children[current_position][0]][children[current_position][1]] == 1:
-                find_block_while_inference(self.maze, children[current_position], full_maze)
+                find_block_while_inference(self.maze, children[current_position], full_maze,
+                                           entire_trajectory_nodes=None,
+                                           want_to_use_one_node_inference_strategy=True,
+                                           want_to_use_two_node_inference_strategy=True,
+                                           want_to_use_three_node_inference_strategy=False)
                 break
             else:
                 current_position = children[current_position]
