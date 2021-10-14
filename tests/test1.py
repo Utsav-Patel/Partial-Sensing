@@ -64,7 +64,6 @@ def compute_for_particular_agent(agent: Agent, num_explored_cells_list: list, nu
     distance_from_source_to_goal_in_discovered_grid = length_of_path_from_source_to_goal(
         create_maze_array_from_discovered_grid(agent.maze), STARTING_POSITION_OF_AGENT, GOAL_POSITION_OF_AGENT)
 
-    print('Distance from source to goal in discovered grid', distance_from_source_to_goal_in_discovered_grid)
     trajectory_length_by_shortest_path_in_final_discovered_grid_list.append(trajectory_length / distance_from_source_to_goal_in_discovered_grid)
     shortest_path_in_final_discovered_grid_by_full_grid_list.append(distance_from_source_to_goal_in_discovered_grid /
                                                                     distance_from_source_to_goal_in_full_grid)
