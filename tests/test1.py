@@ -163,6 +163,6 @@ multiple_plot(LIST_OF_PROBABILITIES, avg_running_time, "Running time", "Density"
 multiple_plot(LIST_OF_PROBABILITIES, avg_num_bumps, "Number of bumps", "Density",
               "Number of bumps", IMG_PATH + "num_bumps" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_num_early_terminations, "Number of early terminations", "Density",
-              "Number of early terminations", IMG_PATH + "num_early_termination" +
-              str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
+# multiple_plot(LIST_OF_PROBABILITIES, avg_num_early_terminations, "Number of early terminations", "Density",
+#               "Number of early terminations", IMG_PATH + "num_early_termination" +
+#               str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
