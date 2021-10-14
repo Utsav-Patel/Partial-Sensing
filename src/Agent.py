@@ -1,8 +1,10 @@
+from abc import ABC, abstractmethod
+
+import numpy as np
+
 from constants import NUM_ROWS, NUM_COLS, STARTING_POSITION_OF_AGENT
 from src.Cell import Cell
 from src.helper import astar_search, compute_heuristics, manhattan_distance, check
-from abc import ABC, abstractmethod
-import numpy as np
 
 
 class Agent(ABC):
@@ -40,6 +42,7 @@ class Agent(ABC):
         self.num_confirmed_cells = 0
         self.num_astar_calls = 0
         self.num_bumps = 0
+        self.num_early_termination = 0
 
     def planning(self):
         # Choose which algorithm you want to use for search
@@ -62,6 +65,7 @@ class Agent(ABC):
         self.num_confirmed_cells = 0
         self.num_astar_calls = 0
         self.num_bumps = 0
+        self.num_early_termination = 0
 
         for row in range(NUM_ROWS):
             for col in range(NUM_COLS):

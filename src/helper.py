@@ -1,8 +1,9 @@
 import random
-import numpy as np
-import matplotlib.pyplot as plt
-from sortedcontainers import SortedSet
 from queue import Queue
+
+import matplotlib.pyplot as plt
+import numpy as np
+from sortedcontainers import SortedSet
 
 from constants import NUM_ROWS, NUM_COLS, X, Y, GOAL_POSITION_OF_AGENT, STARTING_POSITION_OF_AGENT, INF, \
     RELATIVE_POSITION_OF_TWO_MANDATORY_NEIGHBORS, RELATIVE_POSITION_OF_TWO_SENSED_NEIGHBORS, \
@@ -90,6 +91,17 @@ def check(current_position: tuple):
     return False
 
 
+def create_maze_array_from_discovered_grid(maze: list):
+    maze_array = np.ones((NUM_ROWS, NUM_COLS))
+
+    for row in range(NUM_ROWS):
+        for col in range(NUM_COLS):
+            if maze[row][col].is_confirmed and (not maze[row][col].is_blocked):
+                maze_array[row][col] = 0
+
+    return maze_array
+
+
 def length_of_path_from_source_to_goal(maze_array: np.array, start_pos: tuple, goal_pos: tuple):
     """
     This function will return length of path from source to goal if it exists otherwise it will return INF
@@ -121,7 +133,7 @@ def length_of_path_from_source_to_goal(maze_array: np.array, start_pos: tuple, g
         for ind in range(len(X)):
             neighbour = (current_node[0] + X[ind], current_node[1] + Y[ind])
             if check(neighbour) and \
-                    (distance_array[neighbour[0]][neighbour[1]] > distance_array[current_node[0]][current_node[1]] + 1) \
+                    (distance_array[neighbour[0]][neighbour[1]] > distance_array[current_node[0]][current_node[1]] + 1)\
                     and (maze_array[neighbour[0]][neighbour[1]] == 0):
                 q.put(neighbour)
                 distance_array[neighbour[0]][neighbour[1]] = distance_array[current_node[0]][current_node[1]] + 1
@@ -297,12 +309,17 @@ def forward_execution(maze: list, maze_array: np.array, start_pos: tuple, parent
 
     # Iterating from start_pos to goal_pos if we won't get any blocks in between otherwise we are terminating the
     # iteration.
-    while cur_pos != children[cur_pos]:
+    while True:
 
         if is_backtrack_strategy_on:
             path_exist_from_the_last_point = 0
 
         maze[cur_pos[0]][cur_pos[1]].is_confirmed = True
+
+        if maze_array[cur_pos[0]][cur_pos[1]] == 1:
+            maze[cur_pos[0]][cur_pos[1]].is_blocked = True
+        else:
+            maze[cur_pos[0]][cur_pos[1]].is_blocked = False
 
         # Explore the field of view and update the blocked nodes if there's any in the path.
         if want_to_explore_field_of_view:
@@ -326,6 +343,8 @@ def forward_execution(maze: list, maze_array: np.array, start_pos: tuple, parent
             if path_exist_from_the_last_point > 0:
                 last_cell_which_is_not_in_dead_end = cur_pos
 
+        if cur_pos == children[cur_pos]:
+            break
         # If we encounter any block in the path, we have to terminate the iteration
         if maze_array[children[cur_pos][0]][children[cur_pos][1]] == 1:
             break

@@ -1,11 +1,12 @@
 """
-This file contains the comparison between Agent 1,2, and 3.
+This file contains the comparison between Agent 1,2,3 and 4.
 """
 from datetime import datetime
 
 from constants import LIST_OF_PROBABILITIES, INF, STARTING_POSITION_OF_AGENT, GOAL_POSITION_OF_AGENT, IMG_PATH, \
     NUM_ITERATION_FOR_EACH_PROBABILITY
 from src.Agent import Agent
+from src.OurOwnInferenceAgent import OurOwnInferenceAgent
 from src.TheBlindfoldedAgent import TheBlindfoldedAgent
 from src.TheExampleInferenceAgent import TheExampleInferenceAgent
 from src.TheFourNeighborAgent import TheFourNeighborAgent
@@ -15,9 +16,9 @@ from src.helper import generate_grid_with_probability_p, length_of_path_from_sou
 # Just printing this to know when the program execution is started
 print('Start running this file at', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
-num_agents_to_test = 3
-legends = ['Blinded Folded', 'Four Neighbor', 'Example Inference']
-agents = [TheBlindfoldedAgent(), TheFourNeighborAgent(), TheExampleInferenceAgent()]
+num_agents_to_test = 4
+legends = ['Blinded Folded', 'Four Neighbor', 'Example Inference', 'Own Inference']
+agents = [TheBlindfoldedAgent(), TheFourNeighborAgent(), TheExampleInferenceAgent(), OurOwnInferenceAgent()]
 
 avg_num_explored_cells = list()
 avg_num_processed_cells = list()

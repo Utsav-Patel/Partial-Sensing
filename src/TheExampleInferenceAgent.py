@@ -1,8 +1,8 @@
 import numpy as np
 
+from constants import GOAL_POSITION_OF_AGENT
 from src.Agent import Agent
 from src.helper import parent_to_child_dict, sense_current_node, find_block_while_inference
-from constants import GOAL_POSITION_OF_AGENT
 
 
 class TheExampleInferenceAgent(Agent):
@@ -25,20 +25,23 @@ class TheExampleInferenceAgent(Agent):
         current_path = list()
         current_path.append(current_position)
 
-        while current_position != children[current_position]:
+        while True:
 
             if not self.maze[current_position[0]][current_position[1]].is_visited:
                 self.maze[current_position[0]][current_position[1]].is_visited = True
                 sense_current_node(self.maze, current_position, full_maze)
 
             if find_block_while_inference(self.maze, current_position, full_maze, entire_trajectory_nodes):
-                self.num_bumps += 1
+                self.num_early_termination += 1
                 break
 
             if full_maze[children[current_position][0]][children[current_position][1]] == 1:
                 find_block_while_inference(self.maze, children[current_position], full_maze)
+                self.num_bumps += 1
                 break
             else:
+                if current_position == children[current_position]:
+                    break
                 current_position = children[current_position]
                 current_path.append(current_position)
 
