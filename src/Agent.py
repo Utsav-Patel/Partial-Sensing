@@ -1,6 +1,6 @@
 from constants import NUM_ROWS, NUM_COLS, STARTING_POSITION_OF_AGENT
 from src.Cell import Cell
-from src.helper import astar_search, compute_heuristics, manhattan_distance
+from src.helper import astar_search, compute_heuristics, manhattan_distance, check
 from abc import ABC, abstractmethod
 import numpy as np
 
@@ -8,11 +8,24 @@ import numpy as np
 class Agent(ABC):
     def __init__(self, algorithm: str = 'astar', heuristic_function: str = 'manhattan'):
         self.maze = list()
+        self.knowledge_base = list()
+        self.variable_to_constraint_dict = dict()
 
         for row in range(NUM_ROWS):
             cell_list = list()
             for col in range(NUM_COLS):
                 cell_list.append(Cell())
+
+                for relative_x in range(-1, 2):
+                    for relative_y in range(-1, 2):
+                        neighbor = (row + relative_x, col + relative_y)
+
+                        if neighbor == (row, col):
+                            continue
+
+                        if check(neighbor):
+                            cell_list[col].num_neighbor += 1
+                            cell_list[col].eight_neighbors.append(neighbor)
             self.maze.append(cell_list)
 
         if heuristic_function == 'manhattan':
@@ -26,6 +39,7 @@ class Agent(ABC):
         self.parents = dict()
         self.num_confirmed_cells = 0
         self.num_astar_calls = 0
+        self.num_bumps = 0
 
     def planning(self):
         # Choose which algorithm you want to use for search
@@ -38,6 +52,8 @@ class Agent(ABC):
             raise Exception("algorithm should be either astar or bfs")
 
     def reset_except_h(self):
+        self.knowledge_base = list()
+        self.variable_to_constraint_dict = dict()
         self.current_position = STARTING_POSITION_OF_AGENT
         self.num_cells_processed_while_planning = 0
         self.final_paths = list()
@@ -45,6 +61,7 @@ class Agent(ABC):
         self.parents = dict()
         self.num_confirmed_cells = 0
         self.num_astar_calls = 0
+        self.num_bumps = 0
 
         for row in range(NUM_ROWS):
             for col in range(NUM_COLS):

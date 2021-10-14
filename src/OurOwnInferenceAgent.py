@@ -29,9 +29,17 @@ class OurOwnInferenceAgent(Agent):
 
             if not self.maze[current_position[0]][current_position[1]].is_visited:
                 self.maze[current_position[0]][current_position[1]].is_visited = True
-                sense_current_node(self.maze, current_position, full_maze)
+                sense_current_node(self.maze, current_position, full_maze, knowledge_base=self.knowledge_base,
+                                   variable_to_constraint_dict=self.variable_to_constraint_dict)
 
-            if find_block_while_inference(self.maze, current_position, full_maze, entire_trajectory_nodes, True, True, True):
+            if find_block_while_inference(self.maze, current_position, full_maze, entire_trajectory_nodes,
+                                          want_to_use_one_node_inference_strategy=True,
+                                          want_to_use_two_node_inference_strategy=True,
+                                          want_to_use_three_node_inference_strategy=True,
+                                          want_to_use_most_constraint_variable_for_backtracking_search=True,
+                                          knowledge_base=self.knowledge_base,
+                                          variable_to_constraint_dict=self.variable_to_constraint_dict):
+                self.num_bumps += 1
                 break
 
             if full_maze[children[current_position][0]][children[current_position][1]] == 1:
@@ -39,7 +47,10 @@ class OurOwnInferenceAgent(Agent):
                                            entire_trajectory_nodes=None,
                                            want_to_use_one_node_inference_strategy=True,
                                            want_to_use_two_node_inference_strategy=True,
-                                           want_to_use_three_node_inference_strategy=False)
+                                           want_to_use_three_node_inference_strategy=True,
+                                           want_to_use_most_constraint_variable_for_backtracking_search=True,
+                                           knowledge_base=self.knowledge_base,
+                                           variable_to_constraint_dict=self.variable_to_constraint_dict)
                 break
             else:
                 current_position = children[current_position]

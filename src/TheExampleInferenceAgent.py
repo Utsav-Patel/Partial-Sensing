@@ -2,7 +2,7 @@ import numpy as np
 
 from src.Agent import Agent
 from src.helper import parent_to_child_dict, sense_current_node, find_block_while_inference
-from constants import GOAL_POSITION_OF_AGENT, NUM_ROWS, NUM_COLS
+from constants import GOAL_POSITION_OF_AGENT
 
 
 class TheExampleInferenceAgent(Agent):
@@ -32,6 +32,7 @@ class TheExampleInferenceAgent(Agent):
                 sense_current_node(self.maze, current_position, full_maze)
 
             if find_block_while_inference(self.maze, current_position, full_maze, entire_trajectory_nodes):
+                self.num_bumps += 1
                 break
 
             if full_maze[children[current_position][0]][children[current_position][1]] == 1:

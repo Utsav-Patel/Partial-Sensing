@@ -18,6 +18,8 @@ class Cell:
         self.num_sensed_blocked = 0
         self.num_sensed_unblocked = 0
 
+        self.eight_neighbors = list()
+
     def reset_except_h(self):
         self.g = INF
         self.f = INF
@@ -26,7 +28,7 @@ class Cell:
         self.is_visited = False
         self.is_confirmed = False
 
-        self.num_neighbor = 0
+        # self.num_neighbor = 0
 
         self.num_confirmed_blocked = 0
         self.num_confirmed_unblocked = 0

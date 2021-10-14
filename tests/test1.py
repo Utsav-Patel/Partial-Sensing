@@ -17,17 +17,29 @@ from src.OurOwnInferenceAgent import OurOwnInferenceAgent
 # Just printing this to know when the program execution is started
 print('Start running this file at', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
+num_agents_to_test = 4
 legends = ['Blinded Folded', 'Four Neighbor', 'Example Inference', 'Own Inference']
 agents = [TheBlindfoldedAgent(), TheFourNeighborAgent(), TheExampleInferenceAgent(), OurOwnInferenceAgent()]
-avg_num_explored_cells = [list(), list(), list(), list()]
-avg_num_processed_cells = [list(), list(), list(), list()]
-avg_num_confirmed_cells = [list(), list(), list(), list()]
-avg_num_astar_calls = [list(), list(), list(), list()]
-avg_running_time = [list(), list(), list(), list()]
+
+avg_num_explored_cells = list()
+avg_num_processed_cells = list()
+avg_num_confirmed_cells = list()
+avg_num_astar_calls = list()
+avg_running_time = list()
+avg_num_bumps = list()
+
+for ind in range(num_agents_to_test):
+    avg_num_explored_cells.append(list())
+    avg_num_processed_cells.append(list())
+    avg_num_confirmed_cells.append(list())
+    avg_num_astar_calls.append(list())
+    avg_running_time.append(list())
+    avg_num_bumps.append(list())
 
 
 def compute_for_particular_agent(agent: Agent, num_explored_cells_list: list, num_processed_cells_list: list,
-                                 num_confirmed_cells_list: list, num_astar_calls_list: list, running_time_list: list):
+                                 num_confirmed_cells_list: list, num_astar_calls_list: list, running_time_list: list,
+                                 num_bumps: list):
     agent.reset_except_h()
 
     start_time = datetime.now()
@@ -43,16 +55,26 @@ def compute_for_particular_agent(agent: Agent, num_explored_cells_list: list, nu
     num_confirmed_cells_list.append(agent.num_confirmed_cells)
     num_astar_calls_list.append(agent.num_astar_calls)
     running_time_list.append((end_time - start_time).total_seconds())
+    num_bumps.append(agent.num_bumps)
 
 
 for probability in LIST_OF_PROBABILITIES:
 
     print('Running for', probability)
-    num_explored_cells = [list(), list(), list(), list()]
-    num_processed_cells = [list(), list(), list(), list()]
-    num_confirmed_cells = [list(), list(), list(), list()]
-    num_astar_calls = [list(), list(), list(), list()]
-    running_time = [list(), list(), list(), list()]
+    num_explored_cells = list()
+    num_processed_cells = list()
+    num_confirmed_cells = list()
+    num_astar_calls = list()
+    running_time = list()
+    num_bumps = list()
+
+    for ind in range(num_agents_to_test):
+        num_explored_cells.append(list())
+        num_processed_cells.append(list())
+        num_confirmed_cells.append(list())
+        num_astar_calls.append(list())
+        running_time.append(list())
+        num_bumps.append(list())
 
     num_run = 0
 
@@ -69,7 +91,8 @@ for probability in LIST_OF_PROBABILITIES:
 
         for ind in range(len(agents)):
             compute_for_particular_agent(agents[ind], num_explored_cells[ind], num_processed_cells[ind],
-                                         num_confirmed_cells[ind], num_astar_calls[ind], running_time[ind])
+                                         num_confirmed_cells[ind], num_astar_calls[ind], running_time[ind],
+                                         num_bumps[ind])
 
     for ind in range(len(agents)):
         avg_num_explored_cells[ind].append(avg(num_explored_cells[ind]))
@@ -77,6 +100,7 @@ for probability in LIST_OF_PROBABILITIES:
         avg_num_confirmed_cells[ind].append(avg(num_confirmed_cells[ind]))
         avg_num_astar_calls[ind].append(avg(num_astar_calls[ind]))
         avg_running_time[ind].append(avg(running_time[ind]))
+        avg_num_bumps[ind].append(avg(num_bumps[ind]))
 
 # Ending executing this file after adding necessary plots
 print('Ending running this file at', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
@@ -95,3 +119,6 @@ multiple_plot(LIST_OF_PROBABILITIES, avg_num_astar_calls, "Number of astar calls
 
 multiple_plot(LIST_OF_PROBABILITIES, avg_running_time, "Running time", "Density",
               "Running time (in seconds)", "running_time" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
+
+multiple_plot(LIST_OF_PROBABILITIES, avg_num_bumps, "Number of bumps", "Density",
+              "Number of bumps", "num_bumps" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
