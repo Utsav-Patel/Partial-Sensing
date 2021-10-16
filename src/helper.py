@@ -1,4 +1,5 @@
 import random
+from datetime import datetime
 from queue import Queue
 
 import matplotlib.pyplot as plt
@@ -133,7 +134,7 @@ def length_of_path_from_source_to_goal(maze_array: np.array, start_pos: tuple, g
         for ind in range(len(X)):
             neighbour = (current_node[0] + X[ind], current_node[1] + Y[ind])
             if check(neighbour) and \
-                    (distance_array[neighbour[0]][neighbour[1]] > distance_array[current_node[0]][current_node[1]] + 1)\
+                    (distance_array[neighbour[0]][neighbour[1]] > distance_array[current_node[0]][current_node[1]] + 1) \
                     and (maze_array[neighbour[0]][neighbour[1]] == 0):
                 q.put(neighbour)
                 distance_array[neighbour[0]][neighbour[1]] = distance_array[current_node[0]][current_node[1]] + 1
@@ -210,8 +211,9 @@ def astar_search(maze: list, start_pos: tuple):
     # Add start position node into the sorted set. We are giving priority to f(n), h(n), and g(n) in the decreasing
     # order. Push random number for random selection if there is conflict between two nodes
     # (If f(n), g(n), and h(n) are same for two nodes)
-    sorted_set.add(((maze[start_pos[0]][start_pos[1]].f, maze[start_pos[0]][start_pos[1]].h,
-                     maze[start_pos[0]][start_pos[1]].g, node_to_random_number_mapping[start_pos]), start_pos))
+    sorted_set.add(((maze[start_pos[0]][start_pos[1]].f, maze[start_pos[0]][start_pos[1]].probability_of_being_blocked,
+                     maze[start_pos[0]][start_pos[1]].h, maze[start_pos[0]][start_pos[1]].g,
+                     node_to_random_number_mapping[start_pos]), start_pos))
 
     parents[start_pos] = start_pos
 
@@ -246,9 +248,10 @@ def astar_search(maze: list, start_pos: tuple):
                                                          maze[neighbour[0]][neighbour[1]].h
                     node_to_random_number_mapping[neighbour] = random.uniform(0, 1)
                     visited_nodes.add(neighbour)
-                    sorted_set.add(((maze[neighbour[0]][neighbour[1]].f, maze[neighbour[0]][neighbour[1]].h,
-                                     maze[neighbour[0]][neighbour[1]].g, node_to_random_number_mapping[neighbour]),
-                                    neighbour))
+                    sorted_set.add(((maze[neighbour[0]][neighbour[1]].f,
+                                     maze[neighbour[0]][neighbour[1]].probability_of_being_blocked,
+                                     maze[neighbour[0]][neighbour[1]].h, maze[neighbour[0]][neighbour[1]].g,
+                                     node_to_random_number_mapping[neighbour]), neighbour))
                     parents[neighbour] = current_node[1]
 
                 # If a particular neighbour is already visited, we should compare its f(n) value to its previous f(n)
@@ -263,19 +266,21 @@ def astar_search(maze: list, start_pos: tuple):
                         # neighbour has to be in the sorted set if we are able to find out less value of f(n) for that
                         # particular neighbour
                         if ((maze[neighbour[0]][neighbour[1]].f, maze[neighbour[0]][neighbour[1]].h,
-                             maze[neighbour[0]][neighbour[1]].g, node_to_random_number_mapping[neighbour]),
-                            neighbour) in sorted_set:
+                             maze[neighbour[0]][neighbour[1]].g, node_to_random_number_mapping[neighbour]), neighbour) \
+                                in sorted_set:
                             sorted_set.remove(
-                                ((maze[neighbour[0]][neighbour[1]].f, maze[neighbour[0]][neighbour[1]].h,
-                                  maze[neighbour[0]][neighbour[1]].g, node_to_random_number_mapping[neighbour]),
-                                 neighbour))
+                                ((maze[neighbour[0]][neighbour[1]].f,
+                                  maze[neighbour[0]][neighbour[1]].probability_of_being_blocked,
+                                  maze[neighbour[0]][neighbour[1]].h, maze[neighbour[0]][neighbour[1]].g,
+                                  node_to_random_number_mapping[neighbour]), neighbour))
                         maze[neighbour[0]][neighbour[1]].g = neighbour_g
                         maze[neighbour[0]][neighbour[1]].f = neighbour_f
                         node_to_random_number_mapping[neighbour] = random.uniform(0, 1)
                         sorted_set.add(
-                            ((maze[neighbour[0]][neighbour[1]].f, maze[neighbour[0]][neighbour[1]].h,
-                              maze[neighbour[0]][neighbour[1]].g, node_to_random_number_mapping[neighbour]),
-                             neighbour))
+                            ((maze[neighbour[0]][neighbour[1]].f,
+                              maze[neighbour[0]][neighbour[1]].probability_of_being_blocked,
+                              maze[neighbour[0]][neighbour[1]].h, maze[neighbour[0]][neighbour[1]].g,
+                              node_to_random_number_mapping[neighbour]), neighbour))
                         parents[neighbour] = current_node[1]
 
     return parents, num_explored_nodes
@@ -324,10 +329,12 @@ def forward_execution(maze: list, maze_array: np.array, start_pos: tuple, parent
         # Explore the field of view and update the blocked nodes if there's any in the path.
         if want_to_explore_field_of_view:
             for ind in range(len(X)):
+
                 neighbour = (cur_pos[0] + X[ind], cur_pos[1] + Y[ind])
-                if (check(neighbour)) and (maze_array[neighbour[0]][neighbour[1]] == 1):
-                    maze[neighbour[0]][neighbour[1]].is_blocked = True
+                if check(neighbour):
                     maze[neighbour[0]][neighbour[1]].is_confirmed = True
+                    if maze_array[neighbour[0]][neighbour[1]] == 1:
+                        maze[neighbour[0]][neighbour[1]].is_blocked = True
 
                 # Here, we are finding whether the current node is a part of the dead end or not. If there is a path
                 # exists other than its child and parent, then this node should not be part of dead end because
@@ -415,6 +422,84 @@ def multiple_plot(x, y, title, xlabel, ylabel, savefig_name, legends, fontsize: 
     plt.show()
 
 
+def reset_probability_of_being_block_for_each_cell_after_execution(maze: list):
+    current_position = STARTING_POSITION_OF_AGENT
+    visited_cells = set()
+    queue = Queue()
+    queue.put(current_position)
+    while not queue.empty():
+        current_position = queue.get()
+
+        for neighbor in maze[current_position[0]][current_position[1]].eight_neighbors:
+            if not maze[neighbor[0]][neighbor[1]].is_confirmed:
+                maze[neighbor[0]][neighbor[1]].probability_of_being_blocked = 0
+                maze[neighbor[0]][neighbor[1]].num_visited_neighbors = 0
+        for ind in range(len(X)):
+            neighbor = (current_position[0] + X[ind], current_position[1] + Y[ind])
+            if check(neighbor) and (neighbor not in visited_cells) and maze[neighbor[0]][neighbor[1]].is_visited:
+                queue.put(neighbor)
+                visited_cells.add(neighbor)
+
+
+def compute_probability_of_being_block_for_each_cell_after_execution(maze: list):
+    reset_probability_of_being_block_for_each_cell_after_execution(maze)
+
+    current_position = STARTING_POSITION_OF_AGENT
+    visited_cells = set()
+    queue = Queue()
+    queue.put(current_position)
+    while not queue.empty():
+        current_position = queue.get()
+        num_hidden_cells = maze[current_position[0]][current_position[1]].num_neighbor - \
+                           (maze[current_position[0]][current_position[1]].num_confirmed_blocked +
+                            maze[current_position[0]][current_position[1]].num_confirmed_unblocked)
+        num_hidden_block = maze[current_position[0]][current_position[1]].num_sensed_blocked - \
+                           maze[current_position[0]][current_position[1]].num_confirmed_blocked
+
+        for neighbor in maze[current_position[0]][current_position[1]].eight_neighbors:
+            if not maze[neighbor[0]][neighbor[1]].is_confirmed:
+                maze[neighbor[0]][neighbor[1]].probability_of_being_blocked += num_hidden_block / num_hidden_cells
+                maze[neighbor[0]][neighbor[1]].num_visited_neighbors += 1
+        for ind in range(len(X)):
+            neighbor = (current_position[0] + X[ind], current_position[1] + Y[ind])
+            if check(neighbor) and (neighbor not in visited_cells) and maze[neighbor[0]][neighbor[1]].is_visited:
+                queue.put(neighbor)
+                visited_cells.add(neighbor)
+
+    queue.queue.clear()
+    visited_cells.clear()
+    current_position = STARTING_POSITION_OF_AGENT
+
+    queue.put(current_position)
+
+    while not queue.empty():
+        current_position = queue.get()
+        for neighbor in maze[current_position[0]][current_position[1]].eight_neighbors:
+            if not maze[neighbor[0]][neighbor[1]].is_confirmed:
+                maze[neighbor[0]][neighbor[1]].probability_of_being_blocked = \
+                    maze[neighbor[0]][neighbor[1]].probability_of_being_blocked / \
+                    maze[neighbor[0]][neighbor[1]].num_visited_neighbors
+        for ind in range(len(X)):
+            neighbor = (current_position[0] + X[ind], current_position[1] + Y[ind])
+            if check(neighbor) and (neighbor not in visited_cells) and maze[neighbor[0]][neighbor[1]].is_visited:
+                queue.put(neighbor)
+                visited_cells.add(neighbor)
+
+
+def add_constraint_to_knowledge_base(knowledge_base: list, variable_to_constraint_dict: dict, unconfirmed_cells: set,
+                                     num_blocked_cells_in_unconfirmed_cells: int):
+    if len(unconfirmed_cells) == 0:
+        return
+
+    for neighbor in unconfirmed_cells:
+        if neighbor not in variable_to_constraint_dict:
+            variable_to_constraint_dict[neighbor] = set()
+        variable_to_constraint_dict[neighbor].add(len(knowledge_base))
+
+    # Creating list instead of tuple so that we can update the value of list for each constraint
+    knowledge_base.append([unconfirmed_cells, num_blocked_cells_in_unconfirmed_cells])
+
+
 def sense_current_node(maze, current_position: tuple, full_maze: np.array, knowledge_base=None,
                        variable_to_constraint_dict=None):
     if knowledge_base is None:
@@ -428,12 +513,6 @@ def sense_current_node(maze, current_position: tuple, full_maze: np.array, knowl
 
     for neighbor in maze[current_position[0]][current_position[1]].eight_neighbors:
 
-        # if current_position == neighbor:
-        #     continue
-
-        # if check(neighbor):
-        # maze[current_position[0]][current_position[1]].num_neighbor += 1
-
         if maze[neighbor[0]][neighbor[1]].is_confirmed:
             if maze[neighbor[0]][neighbor[1]].is_blocked:
                 maze[current_position[0]][current_position[1]].num_confirmed_blocked += 1
@@ -443,18 +522,14 @@ def sense_current_node(maze, current_position: tuple, full_maze: np.array, knowl
                 maze[current_position[0]][current_position[1]].num_sensed_unblocked += 1
         else:
             unconfirmed_cells.add(neighbor)
-            if neighbor not in variable_to_constraint_dict:
-                variable_to_constraint_dict[neighbor] = set()
-            variable_to_constraint_dict[neighbor].add(len(knowledge_base))
 
             if full_maze[neighbor[0]][neighbor[1]] == 1:
                 num_blocked_cells_in_unconfirmed_cells += 1
                 maze[current_position[0]][current_position[1]].num_sensed_blocked += 1
             else:
                 maze[current_position[0]][current_position[1]].num_sensed_unblocked += 1
-
-    # Creating list instead of tuple so that we can update the value of list
-    knowledge_base.append([unconfirmed_cells, num_blocked_cells_in_unconfirmed_cells])
+    add_constraint_to_knowledge_base(knowledge_base, variable_to_constraint_dict, unconfirmed_cells,
+                                     num_blocked_cells_in_unconfirmed_cells)
 
 
 def check_constraint(variables_set: set, value: int):
@@ -497,11 +572,8 @@ def backtracking_search(current_variable_index: int, total_num_variables: int, v
             knowledge_base[constraint_index][1] += value
 
 
-def make_inference_from_most_constraint_variable(knowledge_base: list, variable_to_constraint_dict: dict,
-                                                 want_to_use_probability_approach: bool = False,
-                                                 maze: list = None):
-    most_constraint_variable = None
-
+def most_constraint_variable_list(variable_to_constraint_dict: dict, want_to_use_probability_approach: bool,
+                                  maze: list):
     if want_to_use_probability_approach:
         max_probability = 0
         cells_with_same_highest_probability = list()
@@ -514,10 +586,7 @@ def make_inference_from_most_constraint_variable(knowledge_base: list, variable_
             elif max_probability == probability:
                 cells_with_same_highest_probability.append(variable)
 
-        if len(cells_with_same_highest_probability) > 0:
-            most_constraint_variable = cells_with_same_highest_probability[
-                random.randint(1, len(cells_with_same_highest_probability)) - 1
-            ]
+        return cells_with_same_highest_probability
 
     else:
         cells_which_are_most_constraint_variable = list()
@@ -530,14 +599,11 @@ def make_inference_from_most_constraint_variable(knowledge_base: list, variable_
             elif max_num_constraint == len(variable_to_constraint_dict[variable]):
                 cells_which_are_most_constraint_variable.append(variable)
 
-        if len(cells_which_are_most_constraint_variable) > 0:
-            most_constraint_variable = cells_which_are_most_constraint_variable[
-                random.randint(1, len(cells_which_are_most_constraint_variable)) - 1
-            ]
+        return cells_which_are_most_constraint_variable
 
-    if most_constraint_variable is None:
-        return Queue()
 
+def make_inference_from_most_constraint_variable(knowledge_base: list, variable_to_constraint_dict: dict,
+                                                 most_constraint_variable: tuple):
     constraints_containing_most_constraint_variable_set = set()
     constraints_containing_most_constraint_variable_list = list()
     current_constraint_list = list()
@@ -561,9 +627,53 @@ def make_inference_from_most_constraint_variable(knowledge_base: list, variable_
 
     queue = Queue()
     for variable in frequency_of_each_output_for_each_variable:
-        if (frequency_of_each_output_for_each_variable[variable][0] == 0) or \
-                (frequency_of_each_output_for_each_variable[variable][1] == 0):
+        if (frequency_of_each_output_for_each_variable[variable][0] == 0 and
+            frequency_of_each_output_for_each_variable[variable][1] != 0) or \
+                (frequency_of_each_output_for_each_variable[variable][1] == 0 and
+                 frequency_of_each_output_for_each_variable[variable][0] != 0):
             queue.put(variable)
+
+    return queue
+
+
+def make_inference_from_most_constraint_variable_list(knowledge_base: list, variable_to_constraint_dict: dict,
+                                                      want_to_use_probability_approach: bool = False,
+                                                      maze: list = None, list_of_variables_in_the_path=None):
+    if list_of_variables_in_the_path is None:
+        list_of_variables_in_the_path = list()
+    most_constraint_variables = most_constraint_variable_list(variable_to_constraint_dict,
+                                                              want_to_use_probability_approach, maze)
+
+    if len(most_constraint_variables) == 0:
+        return Queue()
+
+    visited_variables = set()
+    for variable in list_of_variables_in_the_path:
+        most_constraint_variables.append(variable)
+
+    queue = Queue()
+    for most_constraint_variable in most_constraint_variables:
+
+        if most_constraint_variable in visited_variables:
+            continue
+        visited_variables.add(most_constraint_variable)
+        queue2 = make_inference_from_most_constraint_variable(knowledge_base, variable_to_constraint_dict,
+                                                              most_constraint_variable)
+        while not queue2.empty():
+            queue.put(queue2.get())
+
+    start_time = datetime.now()
+    for variable in variable_to_constraint_dict:
+        if variable in visited_variables:
+            continue
+        visited_variables.add(variable)
+        queue2 = make_inference_from_most_constraint_variable(knowledge_base, variable_to_constraint_dict, variable)
+        while not queue2.empty():
+            queue.put(queue2.get())
+        end_time = datetime.now()
+        if (end_time - start_time).total_seconds() > 1:
+            break
+        # print((end_time-start_time).total_seconds())
 
     return queue
 
@@ -588,8 +698,17 @@ def remove_variable_from_knowledge_base(knowledge_base: list, variable_to_constr
 
 def can_infer(num_sensed_blocked: int, num_confirmed_blocked: int, num_sensed_unblocked: int,
               num_confirmed_unblocked: int):
+    assert (num_sensed_blocked >= num_confirmed_blocked) and (num_sensed_unblocked >= num_confirmed_unblocked)
     if ((num_sensed_blocked == num_confirmed_blocked) and (num_sensed_unblocked > num_confirmed_unblocked)) or \
             ((num_sensed_unblocked == num_confirmed_unblocked) and (num_sensed_blocked > num_confirmed_blocked)):
+        return True
+    return False
+
+
+def is_ambiguous(num_sensed_blocked: int, num_confirmed_blocked: int, num_sensed_unblocked: int,
+                 num_confirmed_unblocked: int):
+    assert (num_sensed_blocked >= num_confirmed_blocked) and (num_sensed_unblocked >= num_confirmed_unblocked)
+    if (num_sensed_blocked > num_confirmed_blocked) and (num_sensed_unblocked > num_confirmed_unblocked):
         return True
     return False
 
@@ -599,7 +718,9 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                want_to_use_two_node_inference_strategy: bool = False,
                                want_to_use_three_node_inference_strategy: bool = False,
                                want_to_use_most_constraint_variable_for_backtracking_search: bool = False,
-                               knowledge_base=None, variable_to_constraint_dict=None):
+                               want_to_use_probability_approach=True,
+                               knowledge_base=None, variable_to_constraint_dict=None,
+                               list_of_variables_in_the_path=None):
     if knowledge_base is None:
         knowledge_base = list()
 
@@ -608,6 +729,9 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
 
     if variable_to_constraint_dict is None:
         variable_to_constraint_dict = dict()
+
+    if list_of_variables_in_the_path is None:
+        list_of_variables_in_the_path = list()
 
     inference_items = Queue()
     items_in_the_queue = set()
@@ -637,20 +761,17 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                 remove_variable_from_knowledge_base(knowledge_base, variable_to_constraint_dict, current_node,
                                                     current_node_val)
 
-                for row in range(-1, 2):
-                    for col in range(-1, 2):
-                        neighbor = (current_node[0] + row, current_node[1] + col)
-                        if (not check(neighbor)) or (current_node == neighbor) or \
-                                (not maze[neighbor[0]][neighbor[1]].is_visited):
-                            continue
-                        if maze[current_node[0]][current_node[1]].is_blocked:
-                            maze[neighbor[0]][neighbor[1]].num_confirmed_blocked += 1
-                        else:
-                            maze[neighbor[0]][neighbor[1]].num_confirmed_unblocked += 1
+                for neighbor in maze[current_node[0]][current_node[1]].eight_neighbors:
+                    if not maze[neighbor[0]][neighbor[1]].is_visited:
+                        continue
+                    if maze[current_node[0]][current_node[1]].is_blocked:
+                        maze[neighbor[0]][neighbor[1]].num_confirmed_blocked += 1
+                    else:
+                        maze[neighbor[0]][neighbor[1]].num_confirmed_unblocked += 1
 
-                        if not (neighbor in items_in_the_queue):
-                            items_in_the_queue.add(neighbor)
-                            inference_items.put(neighbor)
+                    if not (neighbor in items_in_the_queue):
+                        items_in_the_queue.add(neighbor)
+                        inference_items.put(neighbor)
 
             if maze[current_node[0]][current_node[1]].is_visited:
                 if want_to_use_one_node_inference_strategy:
@@ -659,15 +780,11 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                  maze[current_node[0]][current_node[1]].num_sensed_unblocked,
                                  maze[current_node[0]][current_node[1]].num_confirmed_unblocked):
 
-                        for row in range(-1, 2):
-                            for col in range(-1, 2):
-                                neighbor = (current_node[0] + row, current_node[1] + col)
-
-                                if check(neighbor) and (current_node != neighbor) and \
-                                        (neighbor not in items_in_the_queue) and \
-                                        (not maze[neighbor[0]][neighbor[1]].is_confirmed):
-                                    items_in_the_queue.add(neighbor)
-                                    inference_items.put(neighbor)
+                        for neighbor in maze[current_node[0]][current_node[1]].eight_neighbors:
+                            if (neighbor not in items_in_the_queue) and \
+                                    (not maze[neighbor[0]][neighbor[1]].is_confirmed):
+                                items_in_the_queue.add(neighbor)
+                                inference_items.put(neighbor)
 
                 if want_to_use_three_node_inference_strategy:
                     for index in range(len(RELATIVE_POSITION_OF_TWO_MANDATORY_NEIGHBORS)):
@@ -688,8 +805,11 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
 
                             if maze[current_node[0]][current_node[1]].is_blocked:
                                 num_confirmed_blocked += 1
+                                num_sensed_blocked += 1
+                                assert False
                             else:
                                 num_confirmed_unblocked += 1
+                                num_sensed_unblocked += 1
 
                             for ind in range(len(two_mandatory_neighbors)):
                                 relative_position = two_mandatory_neighbors[ind]
@@ -702,13 +822,16 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                 num_sensed_blocked += factor * maze[neighbor[0]][neighbor[1]].num_sensed_blocked
                                 num_confirmed_blocked += factor * maze[neighbor[0]][neighbor[1]].num_confirmed_blocked
                                 num_sensed_unblocked += factor * maze[neighbor[0]][neighbor[1]].num_sensed_unblocked
-                                num_confirmed_unblocked += factor * maze[neighbor[0]][
-                                    neighbor[1]].num_confirmed_unblocked
+                                num_confirmed_unblocked += factor * \
+                                                           maze[neighbor[0]][neighbor[1]].num_confirmed_unblocked
 
                                 if maze[neighbor[0]][neighbor[1]].is_blocked:
                                     num_confirmed_blocked += factor
+                                    num_sensed_blocked += factor
+                                    assert False
                                 else:
                                     num_confirmed_unblocked += factor
+                                    num_sensed_unblocked += factor
 
                             if can_infer(num_sensed_blocked, num_confirmed_blocked, num_sensed_unblocked,
                                          num_confirmed_unblocked):
@@ -721,6 +844,24 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                             (not maze[neighbor[0]][neighbor[1]].is_confirmed):
                                         items_in_the_queue.add(neighbor)
                                         inference_items.put(neighbor)
+
+                            elif is_ambiguous(num_sensed_blocked, num_confirmed_blocked, num_sensed_unblocked,
+                                              num_confirmed_unblocked):
+                                unconfirmed_cells = set()
+                                num_blocked_cells_in_unconfirmed_cells = 0
+                                for relative_position in RELATIVE_POSITION_OF_TWO_SENSED_NEIGHBORS[index]:
+                                    neighbor = (
+                                        current_node[0] + relative_position[0], current_node[1] + relative_position[1])
+                                    if check(neighbor) and (not maze[neighbor[0]][neighbor[1]].is_confirmed):
+                                        unconfirmed_cells.add(neighbor)
+                                        num_blocked_cells_in_unconfirmed_cells += full_maze[neighbor[0]][neighbor[1]]
+
+                                assert num_blocked_cells_in_unconfirmed_cells == num_sensed_blocked - num_confirmed_blocked
+                                assert len(unconfirmed_cells) >= num_sensed_blocked - num_confirmed_blocked
+
+                                add_constraint_to_knowledge_base(knowledge_base, variable_to_constraint_dict,
+                                                                 unconfirmed_cells,
+                                                                 num_blocked_cells_in_unconfirmed_cells)
 
                 if want_to_use_two_node_inference_strategy:
                     for index in range(len(X)):
@@ -736,13 +877,21 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                             # Can comment the below two if and else
                             if maze[current_node[0]][current_node[1]].is_blocked:
                                 num_confirmed_blocked += 1
+                                num_sensed_blocked += 1
+                                assert False
                             else:
                                 num_confirmed_unblocked += 1
+                                num_sensed_unblocked += 1
 
                             if maze[neighbor[0]][neighbor[1]].is_blocked:
                                 num_confirmed_blocked -= 1
+                                num_sensed_blocked -= 1
+                                assert False
                             else:
                                 num_confirmed_unblocked -= 1
+                                num_sensed_unblocked -= 1
+
+                            assert (num_confirmed_blocked == 0) and (num_confirmed_unblocked == 0)
 
                             for relative_position in RELATIVE_POSITION_OF_NEIGHBORS_TO_CHECK[index]:
                                 cell = (current_node[0] + relative_position[0], current_node[1] + relative_position[1])
@@ -751,8 +900,10 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                         num_not_confirmed_cells += 1
                                     elif maze[cell[0]][cell[1]].is_blocked:
                                         num_confirmed_blocked += 1
+                                        num_sensed_blocked += 1
                                     else:
                                         num_confirmed_unblocked += 1
+                                        num_sensed_unblocked += 1
 
                             if num_not_confirmed_cells == 0:
                                 num_sensed_blocked += maze[current_node[0]][current_node[1]].num_sensed_blocked - \
@@ -765,21 +916,47 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                                                current_node[1]].num_confirmed_unblocked - \
                                                            maze[neighbor[0]][neighbor[1]].num_confirmed_unblocked
 
-                            if can_infer(num_sensed_blocked, num_confirmed_blocked, num_sensed_unblocked,
-                                         num_confirmed_unblocked):
+                                assert (num_sensed_blocked >= num_confirmed_blocked) and \
+                                       (num_sensed_unblocked >= num_confirmed_unblocked)
 
-                                for relative_position in RELATIVE_POSITION_OF_NEIGHBORS_TO_UPDATE[index]:
-                                    cell = (
-                                        current_node[0] + relative_position[0], current_node[1] + relative_position[1])
+                                if can_infer(num_sensed_blocked, num_confirmed_blocked, num_sensed_unblocked,
+                                             num_confirmed_unblocked):
 
-                                    if check(cell) and (cell not in items_in_the_queue) and \
-                                            (not maze[cell[0]][cell[1]].is_confirmed):
-                                        items_in_the_queue.add(cell)
-                                        inference_items.put(cell)
+                                    for relative_position in RELATIVE_POSITION_OF_NEIGHBORS_TO_UPDATE[index]:
+                                        cell = (
+                                            current_node[0] + relative_position[0],
+                                            current_node[1] + relative_position[1])
+
+                                        if check(cell) and (cell not in items_in_the_queue) and \
+                                                (not maze[cell[0]][cell[1]].is_confirmed):
+                                            items_in_the_queue.add(cell)
+                                            inference_items.put(cell)
+
+                                elif is_ambiguous(num_sensed_blocked, num_confirmed_blocked, num_sensed_unblocked,
+                                                  num_confirmed_unblocked):
+                                    unconfirmed_cells = set()
+                                    num_blocked_cells_in_unconfirmed_cells = 0
+                                    for relative_position in RELATIVE_POSITION_OF_NEIGHBORS_TO_UPDATE[index]:
+                                        cell = (
+                                            current_node[0] + relative_position[0],
+                                            current_node[1] + relative_position[1])
+                                        if check(cell) and (not maze[cell[0]][cell[1]].is_confirmed):
+                                            unconfirmed_cells.add(cell)
+                                            num_blocked_cells_in_unconfirmed_cells += full_maze[cell[0]][cell[1]]
+
+                                    assert num_blocked_cells_in_unconfirmed_cells == num_sensed_blocked - num_confirmed_blocked
+                                    assert (len(unconfirmed_cells) >= (num_sensed_blocked - num_confirmed_blocked))
+
+                                    add_constraint_to_knowledge_base(knowledge_base, variable_to_constraint_dict,
+                                                                     unconfirmed_cells,
+                                                                     num_blocked_cells_in_unconfirmed_cells)
 
         if want_to_use_most_constraint_variable_for_backtracking_search:
-            queue = make_inference_from_most_constraint_variable(knowledge_base, variable_to_constraint_dict,
-                                                                 want_to_use_probability_approach=True, maze=maze)
+            queue = make_inference_from_most_constraint_variable_list(knowledge_base, variable_to_constraint_dict,
+                                                                      want_to_use_probability_approach=
+                                                                      want_to_use_probability_approach, maze=maze,
+                                                                      list_of_variables_in_the_path=
+                                                                      list_of_variables_in_the_path)
             while not queue.empty():
                 current_node = queue.get()
                 if current_node not in items_in_the_queue:
