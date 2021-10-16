@@ -136,34 +136,66 @@ for probability in LIST_OF_PROBABILITIES:
 # Ending executing this file after adding necessary plots
 print('Ending running this file at', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_num_explored_cells, "Number of explored cells", "Density",
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_explored_cells, "Number of explored cells", "Density (in %)",
               "Num of explored cells", IMG_PATH + "explored_nodes" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_num_processed_cells, "Number of processed cells", "Density",
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_processed_cells, "Number of processed cells", "Density (in %)",
               "Num of processed cells", IMG_PATH + "processed_cells" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_trajectory_length_by_shortest_path_in_final_discovered_grid,
-              "Trajectory Length by shortest length in discorved grid", "Density", "Ratio",
-              IMG_PATH + "trajectory_length_by_shortest_path_in_final_discorved_grid" +
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_trajectory_length_by_shortest_path_in_final_discovered_grid,
+              "Trajectory Length by shortest length in discovered grid", "Density (in %)", "Ratio of two lengths",
+              IMG_PATH + "trajectory_length_by_shortest_path_in_final_discovered_grid" +
               str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_shortest_path_in_final_discovered_grid_by_full_grid,
-              "Shortest length in (final discorved / full) grid", "Density", "Ratio",
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_shortest_path_in_final_discovered_grid_by_full_grid,
+              "Shortest length in (final discovered / full) grid", "Density (int %)", "Ratio of two lengths",
               IMG_PATH + "shortest_path_in_final_discovered_by_full_grid" +
               str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_num_confirmed_cells, "Number of confirmed cells", "Density",
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_confirmed_cells, "Number of confirmed cells", "Density (in %)",
               "Num of confirmed cells", IMG_PATH + "confirmed_cells" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_num_astar_calls, "Number of astar calls", "Density",
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_astar_calls, "Number of astar calls", "Density (in %)",
               "Num of astar calls", IMG_PATH + "num_astar_calls" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_running_time, "Running time", "Density",
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_running_time, "Running time (in seconds)", "Density (in %)",
               "Running time (in seconds)", IMG_PATH + "running_time" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_num_bumps, "Number of bumps", "Density",
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_bumps, "Number of bumps", "Density (in %)",
               "Number of bumps", IMG_PATH + "num_bumps" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_num_early_terminations[2:], "Number of early terminations", "Density",
-              "Number of early terminations", IMG_PATH + "num_early_termination" +
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_early_terminations[2:], "Number of early terminations",
+              "Density (in %)", "Number of early terminations", IMG_PATH + "num_early_termination" +
               str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends[2:])
+
+# Difference Graphs
+diff_legends = ['Agent4 - Agent1', 'Agent4 - Agent2', 'Agent4 - Agent3']
+avg_num_diff_confirmed_cells = list()
+avg_num_diff_early_termination_cells = list()
+avg_num_diff_bumps = list()
+
+for ind in range(len(agents)-1):
+    diff_list_for_confirmed_cells = list()
+    diff_list_for_early_termination_cells = list()
+    diff_list_for_bumps = list()
+
+    for ind2 in range(len(avg_num_confirmed_cells[ind])):
+        diff_list_for_confirmed_cells.append(avg_num_confirmed_cells[len(agents) - 1][ind2] - avg_num_confirmed_cells[ind][ind2])
+        diff_list_for_early_termination_cells.append(avg_num_early_terminations[len(agents) - 1][ind2] - avg_num_early_terminations[ind][ind2])
+        diff_list_for_bumps.append(avg_num_bumps[len(agents) - 1][ind2] - avg_num_bumps[ind][ind2])
+
+    avg_num_diff_confirmed_cells.append(diff_list_for_confirmed_cells)
+    avg_num_diff_bumps.append(diff_list_for_bumps)
+    avg_num_diff_early_termination_cells.append(diff_list_for_early_termination_cells)
+
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_diff_confirmed_cells, "Difference of confirmed cells",
+              "Density (in %)", "Difference",
+              IMG_PATH + "num_bumps" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", diff_legends)
+
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_diff_early_termination_cells, "Difference of early termination",
+              "Density (in %)", "Difference",
+              IMG_PATH + "num_bumps" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", diff_legends)
+
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_diff_bumps, "Difference in bumps",
+              "Density (in %)", "Difference",
+              IMG_PATH + "num_bumps" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", diff_legends)

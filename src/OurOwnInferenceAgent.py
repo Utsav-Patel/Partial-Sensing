@@ -27,6 +27,15 @@ class OurOwnInferenceAgent(Agent):
 
         while True:
 
+            length_of_path_to_check_for_inference = 4
+            current_node = current_position
+
+            list_of_variables_in_the_path = list()
+            while length_of_path_to_check_for_inference > 0:
+                list_of_variables_in_the_path.append(current_node)
+                length_of_path_to_check_for_inference -= 1
+                current_node = children[current_node]
+
             if not self.maze[current_position[0]][current_position[1]].is_visited:
                 self.maze[current_position[0]][current_position[1]].is_visited = True
                 sense_current_node(self.maze, current_position, full_maze, knowledge_base=self.knowledge_base,

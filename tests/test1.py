@@ -135,34 +135,34 @@ for probability in LIST_OF_PROBABILITIES:
 # Ending executing this file after adding necessary plots
 print('Ending running this file at', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_num_explored_cells, "Number of explored cells", "Density",
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_explored_cells, "Number of explored cells", "Density (in %)",
               "Num of explored cells", IMG_PATH + "explored_nodes" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_num_processed_cells, "Number of processed cells", "Density",
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_processed_cells, "Number of processed cells", "Density (int %)",
               "Num of processed cells", IMG_PATH + "processed_cells" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_trajectory_length_by_shortest_path_in_final_discovered_grid,
-              "Trajectory Length by shortest length in discorved grid", "Density", "Ratio",
-              IMG_PATH + "trajectory_length_by_shortest_path_in_final_discorved_grid" +
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_trajectory_length_by_shortest_path_in_final_discovered_grid,
+              "Trajectory Length by shortest length in discovered grid", "Density (in %)", "Ratio of two lengths",
+              IMG_PATH + "trajectory_length_by_shortest_path_in_final_discovered_grid" +
               str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_shortest_path_in_final_discovered_grid_by_full_grid,
-              "Shortest length in (final discorved / full) grid", "Density", "Ratio",
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_shortest_path_in_final_discovered_grid_by_full_grid,
+              "Shortest length in (final discovered / full) grid", "Density (in %)", "Ratio of two lengths",
               IMG_PATH + "shortest_path_in_final_discovered_by_full_grid" +
               str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_num_confirmed_cells, "Number of confirmed cells", "Density",
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_confirmed_cells, "Number of confirmed cells", "Density (in %)",
               "Num of confirmed cells", IMG_PATH + "confirmed_cells" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_num_astar_calls, "Number of astar calls", "Density",
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_astar_calls, "Number of astar calls", "Density (in %)",
               "Num of astar calls", IMG_PATH + "num_astar_calls" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_running_time, "Running time", "Density",
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_running_time, "Running time (in seconds)", "Density (in %)",
               "Running time (in seconds)", IMG_PATH + "running_time" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES, avg_num_bumps, "Number of bumps", "Density",
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_bumps, "Number of bumps", "Density (in %)",
               "Number of bumps", IMG_PATH + "num_bumps" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-# multiple_plot(LIST_OF_PROBABILITIES, avg_num_early_terminations, "Number of early terminations", "Density",
+# multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_early_terminations, "Number of early terminations", "Density (in %)",
 #               "Number of early terminations", IMG_PATH + "num_early_termination" +
 #               str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
