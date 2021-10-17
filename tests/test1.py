@@ -163,6 +163,27 @@ multiple_plot(LIST_OF_PROBABILITIES * 100, avg_running_time, "Running time (in s
 multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_bumps, "Number of bumps", "Density (in %)",
               "Number of bumps", IMG_PATH + "num_bumps" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-# multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_early_terminations, "Number of early terminations", "Density (in %)",
-#               "Number of early terminations", IMG_PATH + "num_early_termination" +
-#               str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
+diff_legends = ['Agent3 - Agent1', 'Agent3 - Agent2']
+avg_num_diff_confirmed_cells = list()
+avg_num_diff_bumps = list()
+
+for ind in range(len(agents)-1):
+    diff_list_for_confirmed_cells = list()
+    diff_list_for_early_termination_cells = list()
+    diff_list_for_bumps = list()
+
+    for ind2 in range(len(avg_num_confirmed_cells[ind])):
+        diff_list_for_confirmed_cells.append(avg_num_confirmed_cells[len(agents) - 1][ind2] - avg_num_confirmed_cells[ind][ind2])
+        diff_list_for_early_termination_cells.append(avg_num_early_terminations[len(agents) - 1][ind2] - avg_num_early_terminations[ind][ind2])
+        diff_list_for_bumps.append(avg_num_bumps[len(agents) - 1][ind2] - avg_num_bumps[ind][ind2])
+
+    avg_num_diff_confirmed_cells.append(diff_list_for_confirmed_cells)
+    avg_num_diff_bumps.append(diff_list_for_bumps)
+
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_diff_confirmed_cells, "Difference of confirmed cells",
+              "Density (in %)", "Difference",
+              IMG_PATH + "diff_confirmed_cells" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", diff_legends)
+
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_diff_bumps, "Difference in bumps",
+              "Density (in %)", "Difference",
+              IMG_PATH + "diff_num_bumps" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", diff_legends)
