@@ -1,13 +1,16 @@
+# Necessary Imports
 import numpy as np
 
 from src.Agent import Agent
 from src.helper import forward_execution
 
 
+# Blindfolded agent's class
 class TheBlindfoldedAgent(Agent):
     def __init__(self):
         super().__init__()
 
+    # Override execution method of Agent class
     def execution(self, full_maze: np.array):
         self.num_astar_calls += 1
         self.num_bumps += 1

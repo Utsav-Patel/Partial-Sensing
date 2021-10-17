@@ -1,6 +1,8 @@
 """
 This file contains the comparison between Agent 1,2,3 and 4.
 """
+
+# Necessary imports
 from datetime import datetime
 
 from constants import LIST_OF_PROBABILITIES, INF, STARTING_POSITION_OF_AGENT, GOAL_POSITION_OF_AGENT, IMG_PATH, \
@@ -16,6 +18,7 @@ from src.helper import generate_grid_with_probability_p, length_of_path_from_sou
 # Just printing this to know when the program execution is started
 print('Start running this file at', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
+# Initialise things for the comparison
 num_agents_to_test = 4
 legends = ['Blinded Folded', 'Four Neighbor', 'Example Inference', 'Own Inference']
 agents = [TheBlindfoldedAgent(), TheFourNeighborAgent(), TheExampleInferenceAgent(), OurOwnInferenceAgent()]
@@ -42,20 +45,25 @@ for ind in range(num_agents_to_test):
     avg_num_early_terminations.append(list())
 
 
+# helper function which would help to compute same thing for each agent
 def compute_for_particular_agent(agent: Agent, num_explored_cells_list: list, num_processed_cells_list: list,
                                  trajectory_length_by_shortest_path_in_final_discovered_grid_list: list,
                                  shortest_path_in_final_discovered_grid_by_full_grid_list: list,
                                  num_confirmed_cells_list: list, num_astar_calls_list: list, running_time_list: list,
                                  num_bumps_list: list, num_early_termination_list: list,
                                  distance_from_source_to_goal_in_full_grid):
+
+    # Resetting the agent
     agent.reset_except_h()
 
+    # Running the following loop until we will reach goal state
     start_time = datetime.now()
     while agent.current_position != GOAL_POSITION_OF_AGENT:
         agent.planning()
         agent.execution(maze_array)
     end_time = datetime.now()
 
+    # Update the necessary attributes
     agent.num_confirmed_cells = compute_num_confirmed_cells(agent.maze)
 
     trajectory_length = compute_explored_cells_from_path(agent.final_paths)
@@ -76,8 +84,10 @@ def compute_for_particular_agent(agent: Agent, num_explored_cells_list: list, nu
     num_early_termination_list.append(agent.num_early_termination)
 
 
+# Iterate over each probability
 for probability in LIST_OF_PROBABILITIES:
 
+    # Initializing necessary attribute for this probability
     print('Running for', probability)
     num_explored_cells = list()
     num_processed_cells = list()
@@ -102,6 +112,7 @@ for probability in LIST_OF_PROBABILITIES:
 
     num_run = 0
 
+    # Run until we will reach maximum number of iterations
     while num_run < NUM_ITERATION_FOR_EACH_PROBABILITY:
         maze_array = generate_grid_with_probability_p(probability)
         distance_from_start_to_goal_in_full_grid = length_of_path_from_source_to_goal(maze_array,
@@ -120,6 +131,7 @@ for probability in LIST_OF_PROBABILITIES:
                                          num_confirmed_cells[ind], num_astar_calls[ind], running_time[ind],
                                          num_bumps[ind], num_early_terminations[ind], distance_from_start_to_goal_in_full_grid)
 
+    # Update necessary fields for each agent
     for ind in range(len(agents)):
         avg_num_explored_cells[ind].append(avg(num_explored_cells[ind]))
         avg_num_processed_cells[ind].append(avg(num_processed_cells[ind]))
@@ -136,6 +148,7 @@ for probability in LIST_OF_PROBABILITIES:
 # Ending executing this file after adding necessary plots
 print('Ending running this file at', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
+# Plots
 multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_explored_cells, "Number of explored cells", "Density (in %)",
               "Num of explored cells", IMG_PATH + "explored_nodes" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 

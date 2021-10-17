@@ -1,6 +1,7 @@
 """
 This file contains the comparison between Agent 1,2, and 3.
 """
+# Necessary imports
 from datetime import datetime
 
 from constants import LIST_OF_PROBABILITIES, INF, STARTING_POSITION_OF_AGENT, GOAL_POSITION_OF_AGENT, IMG_PATH, \
@@ -15,6 +16,7 @@ from src.helper import generate_grid_with_probability_p, length_of_path_from_sou
 # Just printing this to know when the program execution is started
 print('Start running this file at', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
+# Define list for each agents and create matrices respectively
 num_agents_to_test = 3
 legends = ['Blinded Folded', 'Four Neighbor', 'Example Inference']
 agents = [TheBlindfoldedAgent(), TheFourNeighborAgent(), TheExampleInferenceAgent()]
@@ -41,26 +43,34 @@ for ind in range(num_agents_to_test):
     avg_num_early_terminations.append(list())
 
 
+# This function is used to run for each each agent so we can generate results for each agent
 def compute_for_particular_agent(agent: Agent, num_explored_cells_list: list, num_processed_cells_list: list,
                                  trajectory_length_by_shortest_path_in_final_discovered_grid_list: list,
                                  shortest_path_in_final_discovered_grid_by_full_grid_list: list,
                                  num_confirmed_cells_list: list, num_astar_calls_list: list, running_time_list: list,
                                  num_bumps_list: list, num_early_termination_list: list,
                                  distance_from_source_to_goal_in_full_grid):
+
+    # Reset all things except h
     agent.reset_except_h()
 
     start_time = datetime.now()
+
+    # Keep repeating this until agent will reach to goal position
     while agent.current_position != GOAL_POSITION_OF_AGENT:
         agent.planning()
         agent.execution(maze_array)
     end_time = datetime.now()
 
+    # Compute number of confirmed cells
     agent.num_confirmed_cells = compute_num_confirmed_cells(agent.maze)
 
+    # Compute trajectory length
     trajectory_length = compute_explored_cells_from_path(agent.final_paths)
     num_explored_cells_list.append(trajectory_length)
     num_processed_cells_list.append(agent.num_cells_processed_while_planning)
 
+    # Compute distance from start to gaol in final discovered grid
     distance_from_source_to_goal_in_discovered_grid = length_of_path_from_source_to_goal(
         create_maze_array_from_discovered_grid(agent.maze), STARTING_POSITION_OF_AGENT, GOAL_POSITION_OF_AGENT)
 
@@ -68,6 +78,7 @@ def compute_for_particular_agent(agent: Agent, num_explored_cells_list: list, nu
     shortest_path_in_final_discovered_grid_by_full_grid_list.append(distance_from_source_to_goal_in_discovered_grid /
                                                                     distance_from_source_to_goal_in_full_grid)
 
+    # Compute the rest of the useful things and append in the respective matrix
     num_confirmed_cells_list.append(agent.num_confirmed_cells)
     num_astar_calls_list.append(agent.num_astar_calls)
     running_time_list.append((end_time - start_time).total_seconds())
@@ -75,6 +86,7 @@ def compute_for_particular_agent(agent: Agent, num_explored_cells_list: list, nu
     num_early_termination_list.append(agent.num_early_termination)
 
 
+# Iterate over each probability
 for probability in LIST_OF_PROBABILITIES:
 
     print('Running for', probability)
@@ -101,6 +113,7 @@ for probability in LIST_OF_PROBABILITIES:
 
     num_run = 0
 
+    # Iterate over each probability number of iterations time
     while num_run < NUM_ITERATION_FOR_EACH_PROBABILITY:
         maze_array = generate_grid_with_probability_p(probability)
         distance_from_start_to_goal_in_full_grid = length_of_path_from_source_to_goal(maze_array,
@@ -112,6 +125,7 @@ for probability in LIST_OF_PROBABILITIES:
 
         num_run += 1
 
+        # Run for each agent and generate result
         for ind in range(len(agents)):
             compute_for_particular_agent(agents[ind], num_explored_cells[ind], num_processed_cells[ind],
                                          trajectory_length_by_shortest_path_in_final_discovered_grid[ind],
@@ -135,6 +149,7 @@ for probability in LIST_OF_PROBABILITIES:
 # Ending executing this file after adding necessary plots
 print('Ending running this file at', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
+# Plots are here
 multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_explored_cells, "Number of explored cells", "Density (in %)",
               "Num of explored cells", IMG_PATH + "explored_nodes" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
@@ -163,6 +178,7 @@ multiple_plot(LIST_OF_PROBABILITIES * 100, avg_running_time, "Running time (in s
 multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_bumps, "Number of bumps", "Density (in %)",
               "Number of bumps", IMG_PATH + "num_bumps" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
+# Diff Plots are here
 diff_legends = ['Agent3 - Agent1', 'Agent3 - Agent2']
 avg_num_diff_confirmed_cells = list()
 avg_num_diff_bumps = list()

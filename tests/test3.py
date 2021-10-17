@@ -12,7 +12,7 @@ from src.TheExampleInferenceAgent import TheExampleInferenceAgent
 from src.TheFourNeighborAgent import TheFourNeighborAgent
 from src.helper import generate_grid_with_probability_p, length_of_path_from_source_to_goal, avg, multiple_plot, \
     compute_num_confirmed_cells, compute_explored_cells_from_path, create_maze_array_from_discovered_grid, \
-    compute_probability_of_being_block_for_each_cell_after_execution
+    compute_probability_of_being_block_for_each_cell_after_execution, compute_num_confirmed_blocked_cells
 
 # Just printing this to know when the program execution is started
 print('Start running this file at', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
@@ -50,7 +50,6 @@ def compute_for_particular_agent(agent: Agent, num_explored_cells_list: list, nu
                                  num_confirmed_cells_list: list, num_astar_calls_list: list, running_time_list: list,
                                  num_bumps_list: list, num_early_termination_list: list,
                                  distance_from_source_to_goal_in_full_grid, is_agent5:bool = False):
-    agent.reset_except_h()
 
     start_time = datetime.now()
     while agent.current_position != GOAL_POSITION_OF_AGENT:
@@ -61,6 +60,7 @@ def compute_for_particular_agent(agent: Agent, num_explored_cells_list: list, nu
     end_time = datetime.now()
 
     agent.num_confirmed_cells = compute_num_confirmed_cells(agent.maze)
+    agent.num_confirmed_blocked_cells = compute_num_confirmed_blocked_cells(agent.maze)
 
     trajectory_length = compute_explored_cells_from_path(agent.final_paths)
     num_explored_cells_list.append(trajectory_length)
@@ -78,6 +78,11 @@ def compute_for_particular_agent(agent: Agent, num_explored_cells_list: list, nu
     running_time_list.append((end_time - start_time).total_seconds())
     num_bumps_list.append(agent.num_bumps)
     num_early_termination_list.append(agent.num_early_termination)
+
+    probability_being_blocked = 0.0
+    if is_agent5:
+        probability_being_blocked = agent.num_confirmed_blocked_cells / agent.num_confirmed_cells
+    agent.reset_except_h(probability_being_blocked)
 
 
 for probability in LIST_OF_PROBABILITIES:
@@ -116,6 +121,7 @@ for probability in LIST_OF_PROBABILITIES:
             continue
 
         num_run += 1
+        print('Iteration no:', num_run)
 
         for ind in range(len(agents)):
             is_agent5 = False

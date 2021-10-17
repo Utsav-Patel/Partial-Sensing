@@ -10,13 +10,13 @@ X = [1, 0, -1, 0]
 Y = [0, 1, 0, -1]
 
 # Change this path to other path where you want to store your images
-IMG_PATH = "D:/My_Files/Rutgers/Courses/520 - Introduction to AI/Assignments/Assignment 2/Partial-Sensing/images/"
+IMG_PATH = "D:/My_Files/Rutgers/Courses/520 - Introduction to AI/Assignments/Assignment 2/Partial-Sensing/images/agent5/Experiment3/"
 
 STARTING_POSITION_OF_AGENT = (0, 0)
 GOAL_POSITION_OF_AGENT = (NUM_ROWS-1, NUM_COLS-1)
 
-NUM_ITERATION_FOR_EACH_PROBABILITY = 20
-NUM_UNIFORM_SAMPLE_FOR_EACH_PROBABILITY = 5
+NUM_ITERATION_FOR_EACH_PROBABILITY = 50
+NUM_UNIFORM_SAMPLE_FOR_EACH_PROBABILITY = 34
 START_PROBABILITY = 0.0
 END_PROBABILITY = 0.33
 

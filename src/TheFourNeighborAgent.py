@@ -1,13 +1,16 @@
+# Necessary imports
 import numpy as np
 
 from src.Agent import Agent
 from src.helper import forward_execution
 
 
+# Four Neighbor Agent class
 class TheFourNeighborAgent(Agent):
     def __init__(self):
         super().__init__()
 
+    # Overridden execution method
     def execution(self, full_maze: np.array):
         self.num_astar_calls += 1
         self.num_bumps += 1

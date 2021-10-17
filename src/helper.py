@@ -186,9 +186,9 @@ def parent_to_child_dict(parent: dict, starting_position: tuple):
 
 def compute_num_confirmed_cells(maze: list):
     """
-
-    :param maze:
-    :return:
+    This function is used to compute number of confirmed cells for our maze
+    :param maze: Maze object
+    :return: number of confirmed in the maze
     """
     num_confirmed_cells = 0
     for row in range(NUM_ROWS):
@@ -196,6 +196,20 @@ def compute_num_confirmed_cells(maze: list):
             if maze[row][col].is_confirmed:
                 num_confirmed_cells += 1
     return num_confirmed_cells
+
+
+def compute_num_confirmed_blocked_cells(maze: list):
+    """
+    This function is used to compute number of confirmed blocks for our maze
+    :param maze: Maze object
+    :return: number of confirmed blocks in the maze
+    """
+    num_confirmed_blocked_cells = 0
+    for row in range(NUM_ROWS):
+        for col in range(NUM_COLS):
+            if maze[row][col].is_confirmed and maze[row][col].is_blocked:
+                num_confirmed_blocked_cells += 1
+    return num_confirmed_blocked_cells
 
 
 def astar_search(maze: list, start_pos: tuple):
@@ -522,7 +536,7 @@ def compute_probability_of_being_block_for_each_cell_after_execution(maze: list)
             if (not maze[neighbor[0]][neighbor[1]].is_confirmed) and \
                     maze[neighbor[0]][neighbor[1]].min_hidden_cell_neighbor > num_hidden_cells:
                 num_unconfirmed_cells += 1
-                maze[neighbor[0]][neighbor[1]].probability_of_being_blocked = -1 * num_hidden_block / num_hidden_cells
+                maze[neighbor[0]][neighbor[1]].probability_of_being_blocked = num_hidden_block / num_hidden_cells
                 maze[neighbor[0]][neighbor[1]].min_hidden_cell_neighbor = num_hidden_cells
 
         assert num_unconfirmed_cells <= num_hidden_cells
@@ -745,16 +759,19 @@ def most_constraint_variable_list(variable_to_constraint_dict: dict, want_to_use
 def make_inference_from_most_constraint_variable(knowledge_base: list, variable_to_constraint_dict: dict,
                                                  most_constraint_variable: tuple):
     """
-
-    :param knowledge_base:
-    :param variable_to_constraint_dict:
-    :param most_constraint_variable:
-    :return:
+    This function is used to make inferences from the most constraint variable
+    :param knowledge_base: Agent's knowledge base
+    :param variable_to_constraint_dict: variable to list of index in knowledge base constraint dictionary
+    :param most_constraint_variable: most constraint variable
+    :return: Queue which contains the nodes which are inferred
     """
+
+    # Initialise few things
     constraints_containing_most_constraint_variable_set = set()
     constraints_containing_most_constraint_variable_list = list()
     current_constraint_list = list()
 
+    # Iterate over each constraint to find the most constraint variable
     for constraint_index in variable_to_constraint_dict[most_constraint_variable]:
         current_constraint_list.append(knowledge_base[constraint_index])
         for variable in knowledge_base[constraint_index][0]:
@@ -762,16 +779,19 @@ def make_inference_from_most_constraint_variable(knowledge_base: list, variable_
                 constraints_containing_most_constraint_variable_set.add(variable)
                 constraints_containing_most_constraint_variable_list.append(variable)
 
+    # Check the statement
     assert len(constraints_containing_most_constraint_variable_list) <= 20
 
     num_variables = len(constraints_containing_most_constraint_variable_list)
     frequency_of_each_output_for_each_variable = dict()
     assigned_values_each_variable = dict()
 
+    # Call backtracking search
     backtracking_search(0, num_variables, constraints_containing_most_constraint_variable_list,
                         assigned_values_each_variable, frequency_of_each_output_for_each_variable, knowledge_base,
                         variable_to_constraint_dict, most_constraint_variable)
 
+    # Check and add inferred items to the queue
     queue = Queue()
     for variable in frequency_of_each_output_for_each_variable:
         if (frequency_of_each_output_for_each_variable[variable][0] == 0 and
@@ -786,56 +806,85 @@ def make_inference_from_most_constraint_variable(knowledge_base: list, variable_
 def make_inference_from_most_constraint_variable_list(knowledge_base: list, variable_to_constraint_dict: dict,
                                                       want_to_use_probability_approach: bool = False,
                                                       maze: list = None, list_of_variables_in_the_path=None):
+    """
+    This function would make inferences from the list of variables and then most constrained variables.
+    :param knowledge_base: Agent's knowledge base
+    :param variable_to_constraint_dict: variable to constraint dictionary
+    :param want_to_use_probability_approach: how you want to choose most constrained variables
+    :param maze: Maze object
+    :param list_of_variables_in_the_path: variables which are in my current path
+    :return:
+    """
+
+    # If we haven't passed anything, we should make list_of_variables_in_the_path to empty list
     if list_of_variables_in_the_path is None:
         list_of_variables_in_the_path = list()
+
+    # Extract most constrained variables
     most_constraint_variables = most_constraint_variable_list(variable_to_constraint_dict,
                                                               want_to_use_probability_approach, maze)
 
+    # If there is no constrains in the knowledge base, we are returning empty queue
     if len(most_constraint_variables) == 0:
         return Queue()
 
+    # to keep track of visited varialbes
     visited_variables = set()
     for variable in list_of_variables_in_the_path:
         most_constraint_variables.append(variable)
 
+    # Creating an empty queue which would be useful to return inferred cells
     queue = Queue()
+
+    # Iterate over each most constrained variable
     for most_constraint_variable in most_constraint_variables:
 
         if most_constraint_variable in visited_variables:
             continue
         visited_variables.add(most_constraint_variable)
+
+        # Get another queue which contains the list of variables which are inferred
         queue2 = make_inference_from_most_constraint_variable(knowledge_base, variable_to_constraint_dict,
                                                               most_constraint_variable)
+
+        # Popping element and storing into final queue
         while not queue2.empty():
             queue.put(queue2.get())
 
+    # Here, we are iterating over most constrained variables in decreasing order for 0.5 seconds
     start_time = datetime.now()
     for variable in variable_to_constraint_dict:
+
+        # Don't need to visit again if we have already visited
         if variable in visited_variables:
             continue
         visited_variables.add(variable)
+
+        # Try to make inference if it's possible
         queue2 = make_inference_from_most_constraint_variable(knowledge_base, variable_to_constraint_dict, variable)
         while not queue2.empty():
             queue.put(queue2.get())
         end_time = datetime.now()
-        if (end_time - start_time).total_seconds() > 1:
+
+        # If the threshold is exhausted, then break this loop
+        if (end_time - start_time).total_seconds() > 0.5:
             break
-        # print((end_time-start_time).total_seconds())
 
     return queue
 
 
-# def make_inference_from_knowledge_base(knowledge_base: list):
-#     inferred_cells = list()
-#     for constraint in knowledge_base:
-#         if (len(constraint[0]) == constraint[1]) or (constraint[1] == 0):
-#             print('This should not be inferred')
-#             for node in constraint[0]:
-#                 inferred_cells.append(node)
-
-
 def remove_variable_from_knowledge_base(knowledge_base: list, variable_to_constraint_dict: dict, current_node: tuple,
                                         current_node_val: int):
+    """
+    This function is used to remove element from our knowledge base
+    :param knowledge_base: Knowledge base
+    :param variable_to_constraint_dict: variable to constraint dictionary
+    :param current_node: remove this variable from all constraint list
+    :param current_node_val: value associated with the current cell
+    :return:
+    """
+
+    # Iterate through each constraint and remove it
     if current_node in variable_to_constraint_dict:
         for constraint_index in variable_to_constraint_dict[current_node]:
             knowledge_base[constraint_index][0].remove(current_node)
@@ -845,7 +894,19 @@ def remove_variable_from_knowledge_base(knowledge_base: list, variable_to_constr
 
 def can_infer(num_sensed_blocked: int, num_confirmed_blocked: int, num_sensed_unblocked: int,
               num_confirmed_unblocked: int):
+    """
+    check whether we can infer or not from the current set of variables
+    :param num_sensed_blocked: number of sensed blocks
+    :param num_confirmed_blocked: number of confirmed blocks
+    :param num_sensed_unblocked: number of sensed unblocks
+    :param num_confirmed_unblocked: number confirmed unblocks
+    :return: True if we can infer anything otherwise False
+    """
+
+    # Check precondition
     assert (num_sensed_blocked >= num_confirmed_blocked) and (num_sensed_unblocked >= num_confirmed_unblocked)
+
+    # Condition whether we can infer or not
     if ((num_sensed_blocked == num_confirmed_blocked) and (num_sensed_unblocked > num_confirmed_unblocked)) or \
             ((num_sensed_unblocked == num_confirmed_unblocked) and (num_sensed_blocked > num_confirmed_blocked)):
         return True
@@ -854,6 +915,14 @@ def can_infer(num_sensed_blocked: int, num_confirmed_blocked: int, num_sensed_un
 
 def is_ambiguous(num_sensed_blocked: int, num_confirmed_blocked: int, num_sensed_unblocked: int,
                  num_confirmed_unblocked: int):
+    """
+    Check whether the conditions are ambiguous or not
+    :param num_sensed_blocked: number of sensed blocks
+    :param num_confirmed_blocked: number of confirmed blocks
+    :param num_sensed_unblocked: number of sensed unblocks
+    :param num_confirmed_unblocked: number of confirmed unblocks
+    :return: True if the given set of variables are ambiguous otherwise False
+    """
     assert (num_sensed_blocked >= num_confirmed_blocked) and (num_sensed_unblocked >= num_confirmed_unblocked)
     if (num_sensed_blocked > num_confirmed_blocked) and (num_sensed_unblocked > num_confirmed_unblocked):
         return True
@@ -868,6 +937,28 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                want_to_use_probability_approach=True,
                                knowledge_base=None, variable_to_constraint_dict=None,
                                list_of_variables_in_the_path=None):
+    """
+    This function helps us find blocks in the path if they exist while also performing inference.
+    :param maze: This agents copy of the maze.
+    :param current_position: This is the current position of the agent.
+    :param full_maze: This is the full maze.
+    :param entire_trajectory_nodes: This is the set of nodes that are in the agents current trajectory.
+    :param want_to_use_one_node_inference_strategy: This parameter lets us set if we want use Agent 3's inference
+    strategy.
+    :param want_to_use_two_node_inference_strategy: This parameter lets us set if we want use Agent 4's 2 cell inference
+     strategy.
+    :param want_to_use_three_node_inference_strategy: This parameter lets us set if we want use Agent 4's 3 cell
+    inference strategy.
+    :param want_to_use_most_constraint_variable_for_backtracking_search: This parameter lets us set if we want use Agent
+     4's Advanced inference strategy.
+    :param want_to_use_probability_approach: This parameter lets us decide how we want to get the most constrained
+    variable.
+    :param knowledge_base: This is the knowledge base of the Agent
+    :param variable_to_constraint_dict: This dictionary maps the variables to constraints.
+    :param list_of_variables_in_the_path: This list stores the variables that are currently in our path.
+    :return: True if there is a block in path else false.
+    """
+    # We initialize parameters if we get them as None.
     if knowledge_base is None:
         knowledge_base = list()
 
@@ -880,18 +971,24 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
     if list_of_variables_in_the_path is None:
         list_of_variables_in_the_path = list()
 
+    # We create this queue to help us store all the variables that are going to be confirmed and subsequently store
+    # those cells in a set so that we can access them in constant time.
     inference_items = Queue()
     items_in_the_queue = set()
     is_block_node_in_current_path = False
 
+    # We put the current position of the agent into the Queue and set.
     inference_items.put(current_position)
     items_in_the_queue.add(current_position)
 
+    # We run this while loop until the queue is empty and there is nothing left to be inferred.
     while not inference_items.empty():
         while not inference_items.empty():
             current_node = inference_items.get()
             items_in_the_queue.remove(current_node)
 
+            # If the current node is not set as confirmed in the maze then we set it to confirmed and made updates
+            # accordingly
             if not maze[current_node[0]][current_node[1]].is_confirmed:
 
                 maze[current_node[0]][current_node[1]].is_confirmed = True
@@ -900,14 +997,18 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                 if full_maze[current_node[0]][current_node[1]] == 1:
                     maze[current_node[0]][current_node[1]].is_blocked = True
                     current_node_val = 1
+
+                    # If current node is in the trajectory then we should return True for this function
                     if current_node in entire_trajectory_nodes:
                         is_block_node_in_current_path = True
                 else:
                     maze[current_node[0]][current_node[1]].is_blocked = False
 
+                # Remove this confirmed cell from the knowledge base
                 remove_variable_from_knowledge_base(knowledge_base, variable_to_constraint_dict, current_node,
                                                     current_node_val)
 
+                # Iterate over eight neighbors, update their status and add it into the queue
                 for neighbor in maze[current_node[0]][current_node[1]].eight_neighbors:
                     if not maze[neighbor[0]][neighbor[1]].is_visited:
                         continue
@@ -920,7 +1021,11 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                         items_in_the_queue.add(neighbor)
                         inference_items.put(neighbor)
 
+            # If the current cell is visited, we can inference rules to them
             if maze[current_node[0]][current_node[1]].is_visited:
+
+                # This rule applies to the 3rd as well as the 4th agent where we are trying to infer using only one
+                # cell's inference
                 if want_to_use_one_node_inference_strategy:
                     if can_infer(maze[current_node[0]][current_node[1]].num_sensed_blocked,
                                  maze[current_node[0]][current_node[1]].num_confirmed_blocked,
@@ -933,23 +1038,30 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                 items_in_the_queue.add(neighbor)
                                 inference_items.put(neighbor)
 
+                # Three cells inference strategy
                 if want_to_use_three_node_inference_strategy:
+
+                    # Iterating over all possible mandatory neighbors
                     for index in range(len(RELATIVE_POSITION_OF_TWO_MANDATORY_NEIGHBORS)):
 
+                        # Fetching relative position of mandatory neighbors
                         two_mandatory_neighbors = RELATIVE_POSITION_OF_TWO_MANDATORY_NEIGHBORS[index]
                         num_of_neighbors = 0
 
+                        # Check precondition of mandatory neighbors
                         for relative_position in two_mandatory_neighbors:
                             neighbor = (current_node[0] + relative_position[0], current_node[1] + relative_position[1])
                             if check(neighbor) and maze[neighbor[0]][neighbor[1]].is_visited:
                                 num_of_neighbors += 1
 
+                        # Check whether you found two neighbors or not
                         if num_of_neighbors == 2:
                             num_sensed_blocked = maze[current_node[0]][current_node[1]].num_sensed_blocked
                             num_confirmed_blocked = maze[current_node[0]][current_node[1]].num_confirmed_blocked
                             num_sensed_unblocked = maze[current_node[0]][current_node[1]].num_sensed_unblocked
                             num_confirmed_unblocked = maze[current_node[0]][current_node[1]].num_confirmed_unblocked
 
+                            # Current node should not be blocked
                             if maze[current_node[0]][current_node[1]].is_blocked:
                                 num_confirmed_blocked += 1
                                 num_sensed_blocked += 1
@@ -958,10 +1070,13 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                 num_confirmed_unblocked += 1
                                 num_sensed_unblocked += 1
 
+                            # Iterate over two mandatory neighbors and compute necessary things
                             for ind in range(len(two_mandatory_neighbors)):
                                 relative_position = two_mandatory_neighbors[ind]
                                 neighbor = (
                                     current_node[0] + relative_position[0], current_node[1] + relative_position[1])
+
+                                # Factor is used to subtract the middle element
                                 if ind == 0:
                                     factor = -1
                                 else:
@@ -980,6 +1095,7 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                     num_confirmed_unblocked += factor
                                     num_sensed_unblocked += factor
 
+                            # Check whether we can infer from the current set of knowledge
                             if can_infer(num_sensed_blocked, num_confirmed_blocked, num_sensed_unblocked,
                                          num_confirmed_unblocked):
 
@@ -992,10 +1108,15 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                         items_in_the_queue.add(neighbor)
                                         inference_items.put(neighbor)
 
+                            # Otherwise we will check the ambiguity and add it in our knowledge base
                             elif is_ambiguous(num_sensed_blocked, num_confirmed_blocked, num_sensed_unblocked,
                                               num_confirmed_unblocked):
+
+                                # Initialise some variables
                                 unconfirmed_cells = set()
                                 num_blocked_cells_in_unconfirmed_cells = 0
+
+                                # Compute relative position and create one set for that
                                 for relative_position in RELATIVE_POSITION_OF_TWO_SENSED_NEIGHBORS[index]:
                                     neighbor = (
                                         current_node[0] + relative_position[0], current_node[1] + relative_position[1])
@@ -1003,16 +1124,23 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                         unconfirmed_cells.add(neighbor)
                                         num_blocked_cells_in_unconfirmed_cells += full_maze[neighbor[0]][neighbor[1]]
 
+                                # write assert to check some conditions
                                 assert num_blocked_cells_in_unconfirmed_cells == num_sensed_blocked - num_confirmed_blocked
                                 assert len(unconfirmed_cells) >= num_sensed_blocked - num_confirmed_blocked
 
+                                # Add constraint to the knowledge
                                 add_constraint_to_knowledge_base(knowledge_base, variable_to_constraint_dict,
                                                                  unconfirmed_cells,
                                                                  num_blocked_cells_in_unconfirmed_cells)
 
+                # If you want to use two cell inferences
                 if want_to_use_two_node_inference_strategy:
+
+                    # Iterate over four neighbors which are iterable
                     for index in range(len(X)):
                         neighbor = (current_node[0] + X[index], current_node[1] + Y[index])
+
+                        # Check for valid and visited neighbors
                         if check(neighbor) and maze[neighbor[0]][neighbor[1]].is_visited:
                             num_not_confirmed_cells = 0
 
@@ -1040,6 +1168,7 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
 
                             assert (num_confirmed_blocked == 0) and (num_confirmed_unblocked == 0)
 
+                            # check the status of neighbors which has to be confirmed
                             for relative_position in RELATIVE_POSITION_OF_NEIGHBORS_TO_CHECK[index]:
                                 cell = (current_node[0] + relative_position[0], current_node[1] + relative_position[1])
                                 if check(cell):
@@ -1052,7 +1181,10 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                         num_confirmed_unblocked += 1
                                         num_sensed_unblocked += 1
 
+                            # If number of not confirmed cells is zero, only then we should move ahead
                             if num_not_confirmed_cells == 0:
+
+                                # Do X2 - X1 for each attribute
                                 num_sensed_blocked += maze[current_node[0]][current_node[1]].num_sensed_blocked - \
                                                       maze[neighbor[0]][neighbor[1]].num_sensed_blocked
                                 num_confirmed_blocked += maze[current_node[0]][current_node[1]].num_confirmed_blocked - \
@@ -1063,9 +1195,11 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                                                current_node[1]].num_confirmed_unblocked - \
                                                            maze[neighbor[0]][neighbor[1]].num_confirmed_unblocked
 
+                                # Check the hypothesis
                                 assert (num_sensed_blocked >= num_confirmed_blocked) and \
                                        (num_sensed_unblocked >= num_confirmed_unblocked)
 
+                                # Check whether we can infer anything or not
                                 if can_infer(num_sensed_blocked, num_confirmed_blocked, num_sensed_unblocked,
                                              num_confirmed_unblocked):
 
@@ -1074,13 +1208,17 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                             current_node[0] + relative_position[0],
                                             current_node[1] + relative_position[1])
 
+                                        # Update all unconfirmed cells into queue
                                         if check(cell) and (cell not in items_in_the_queue) and \
                                                 (not maze[cell[0]][cell[1]].is_confirmed):
                                             items_in_the_queue.add(cell)
                                             inference_items.put(cell)
 
+                                # Check this to make sure we will add valid things into our knowledge base
                                 elif is_ambiguous(num_sensed_blocked, num_confirmed_blocked, num_sensed_unblocked,
                                                   num_confirmed_unblocked):
+
+                                    # Initialise attributes to store it in our knowledge base
                                     unconfirmed_cells = set()
                                     num_blocked_cells_in_unconfirmed_cells = 0
                                     for relative_position in RELATIVE_POSITION_OF_NEIGHBORS_TO_UPDATE[index]:
@@ -1091,26 +1229,29 @@ def find_block_while_inference(maze: list, current_position: tuple, full_maze: n
                                             unconfirmed_cells.add(cell)
                                             num_blocked_cells_in_unconfirmed_cells += full_maze[cell[0]][cell[1]]
 
+                                    # Check some precondition
                                     assert num_blocked_cells_in_unconfirmed_cells == num_sensed_blocked - num_confirmed_blocked
                                     assert (len(unconfirmed_cells) >= (num_sensed_blocked - num_confirmed_blocked))
 
+                                    # Add this constraint to our knowledge base
                                     add_constraint_to_knowledge_base(knowledge_base, variable_to_constraint_dict,
                                                                      unconfirmed_cells,
                                                                      num_blocked_cells_in_unconfirmed_cells)
 
+        # This is the advance strategy using backtracking search
         if want_to_use_most_constraint_variable_for_backtracking_search:
+
+            # Getting queue of cells which are inferred
             queue = make_inference_from_most_constraint_variable_list(knowledge_base, variable_to_constraint_dict,
                                                                       want_to_use_probability_approach=
                                                                       want_to_use_probability_approach, maze=maze,
                                                                       list_of_variables_in_the_path=
                                                                       list_of_variables_in_the_path)
+
+            # Adding into queue until it gets empty
             while not queue.empty():
                 current_node = queue.get()
                 if current_node not in items_in_the_queue:
-                    # print(current_node)
-                    # print(knowledge_base)
-                    # print(variable_to_constraint_dict)
-                    # input()
                     items_in_the_queue.add(current_node)
                     inference_items.put(current_node)
 

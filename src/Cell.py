@@ -1,7 +1,11 @@
+# Necessary imports
+
 from constants import INF
 
 
+# Cell class
 class Cell:
+    # Initialise variables for the cell class
     def __init__(self):
         self.g = INF
         self.h = INF
@@ -22,7 +26,8 @@ class Cell:
         self.probability_of_being_blocked = 0.0
         self.eight_neighbors = list()
 
-    def reset_except_h(self):
+    # Reset attributes of this class
+    def reset_except_h(self, default_probability: float = 0.0):
         self.g = INF
         self.f = INF
 
@@ -38,7 +43,7 @@ class Cell:
         self.num_sensed_blocked = 0
         self.num_sensed_unblocked = 0
 
-        self.probability_of_being_blocked = 0.0
+        self.probability_of_being_blocked = default_probability
 
     def reset(self):
         self.reset_except_h()
