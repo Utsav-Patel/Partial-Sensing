@@ -190,12 +190,12 @@ for ind in range(len(agents)-1):
 
 multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_diff_confirmed_cells, "Difference of confirmed cells",
               "Density (in %)", "Difference",
-              IMG_PATH + "num_bumps" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", diff_legends)
+              IMG_PATH + "diff_confirmed_cells" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", diff_legends)
 
 multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_diff_early_termination_cells, "Difference of early termination",
               "Density (in %)", "Difference",
-              IMG_PATH + "num_bumps" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", diff_legends)
+              IMG_PATH + "diff_early_termination" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", diff_legends)
 
 multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_diff_bumps, "Difference in bumps",
               "Density (in %)", "Difference",
-              IMG_PATH + "num_bumps" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", diff_legends)
+              IMG_PATH + "diff_num_bumps" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", diff_legends)

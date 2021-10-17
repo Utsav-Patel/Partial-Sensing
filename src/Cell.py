@@ -12,7 +12,7 @@ class Cell:
         self.is_confirmed = False
 
         self.num_neighbor = 0
-        self.num_visited_neighbors = 0
+        self.min_hidden_cell_neighbor = INF
 
         self.num_confirmed_blocked = 0
         self.num_confirmed_unblocked = 0
@@ -31,7 +31,7 @@ class Cell:
         self.is_confirmed = False
 
         # self.num_neighbor = 0
-        self.num_visited_neighbors = 0
+        self.min_hidden_cell_neighbor = INF
 
         self.num_confirmed_blocked = 0
         self.num_confirmed_unblocked = 0

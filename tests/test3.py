@@ -17,7 +17,7 @@ from src.helper import generate_grid_with_probability_p, length_of_path_from_sou
 # Just printing this to know when the program execution is started
 print('Start running this file at', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
-num_agents_to_test = 2
+num_agents_to_test = 5
 legends = ['Blinded Folded', 'Four Neighbor', 'Example Inference', 'Agent 4', 'Agent 5']
 agents = [TheBlindfoldedAgent(), TheFourNeighborAgent(), TheExampleInferenceAgent(), OurOwnInferenceAgent(),
           OurOwnInferenceAgent()]
@@ -147,7 +147,7 @@ print('Ending running this file at', datetime.now().strftime("%m-%d-%Y %H-%M-%S"
 multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_explored_cells, "Number of explored cells", "Density (in %)",
               "Num of explored cells", IMG_PATH + "explored_nodes" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
-multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_processed_cells, "Number of processed cells", "Density (int %)",
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_processed_cells, "Number of processed cells", "Density (in %)",
               "Num of processed cells", IMG_PATH + "processed_cells" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
 multiple_plot(LIST_OF_PROBABILITIES * 100, avg_trajectory_length_by_shortest_path_in_final_discovered_grid,
@@ -156,7 +156,7 @@ multiple_plot(LIST_OF_PROBABILITIES * 100, avg_trajectory_length_by_shortest_pat
               str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
 multiple_plot(LIST_OF_PROBABILITIES * 100, avg_shortest_path_in_final_discovered_grid_by_full_grid,
-              "Shortest length in (final discovered / full) grid", "Density (int %)", "Ratio of two lengths",
+              "Shortest length in (final discovered / full) grid", "Density (in %)", "Ratio of two lengths",
               IMG_PATH + "shortest_path_in_final_discovered_by_full_grid" +
               str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
 
@@ -175,3 +175,35 @@ multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_bumps, "Number of bumps", "De
 multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_early_terminations, "Number of early terminations", "Density (in %)",
               "Number of early terminations", IMG_PATH + "num_early_termination" +
               str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", legends)
+
+# Difference Graphs
+diff_legends = ['Agent5 - Agent1', 'Agent5 - Agent2', 'Agent5 - Agent3', 'Agent5 - Agent4']
+avg_num_diff_confirmed_cells = list()
+avg_num_diff_early_termination_cells = list()
+avg_num_diff_bumps = list()
+
+for ind in range(len(agents)-1):
+    diff_list_for_confirmed_cells = list()
+    diff_list_for_early_termination_cells = list()
+    diff_list_for_bumps = list()
+
+    for ind2 in range(len(avg_num_confirmed_cells[ind])):
+        diff_list_for_confirmed_cells.append(avg_num_confirmed_cells[len(agents) - 1][ind2] - avg_num_confirmed_cells[ind][ind2])
+        diff_list_for_early_termination_cells.append(avg_num_early_terminations[len(agents) - 1][ind2] - avg_num_early_terminations[ind][ind2])
+        diff_list_for_bumps.append(avg_num_bumps[len(agents) - 1][ind2] - avg_num_bumps[ind][ind2])
+
+    avg_num_diff_confirmed_cells.append(diff_list_for_confirmed_cells)
+    avg_num_diff_bumps.append(diff_list_for_bumps)
+    avg_num_diff_early_termination_cells.append(diff_list_for_early_termination_cells)
+
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_diff_confirmed_cells, "Difference of confirmed cells",
+              "Density (in %)", "Difference",
+              IMG_PATH + "diff_confirmed_cells" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", diff_legends)
+
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_diff_early_termination_cells, "Difference of early termination",
+              "Density (in %)", "Difference",
+              IMG_PATH + "diff_early_termination" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", diff_legends)
+
+multiple_plot(LIST_OF_PROBABILITIES * 100, avg_num_diff_bumps, "Difference in bumps",
+              "Density (in %)", "Difference",
+              IMG_PATH + "diff_num_bumps" + str(datetime.now().strftime("%m-%d-%Y %H-%M-%S")) + ".png", diff_legends)

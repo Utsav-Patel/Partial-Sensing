@@ -1,3 +1,6 @@
+"""
+Necessary Imports
+"""
 import random
 from datetime import datetime
 from queue import Queue
@@ -93,6 +96,11 @@ def check(current_position: tuple):
 
 
 def create_maze_array_from_discovered_grid(maze: list):
+    """
+    This function will generate numpy array from maze list for the discovered grid
+    :param maze: Maze object
+    :return: Numpy array
+    """
     maze_array = np.ones((NUM_ROWS, NUM_COLS))
 
     for row in range(NUM_ROWS):
@@ -157,6 +165,12 @@ def compute_explored_cells_from_path(paths: list):
 
 
 def parent_to_child_dict(parent: dict, starting_position: tuple):
+    """
+    This function is helpful to generate children dictionary from parents dictionary
+    :param parent: parent dictionary
+    :param starting_position: starting position of the last function
+    :return: generate child dictionary from parent.
+    """
     child = dict()
 
     child[starting_position] = starting_position
@@ -171,6 +185,11 @@ def parent_to_child_dict(parent: dict, starting_position: tuple):
 
 
 def compute_num_confirmed_cells(maze: list):
+    """
+
+    :param maze:
+    :return:
+    """
     num_confirmed_cells = 0
     for row in range(NUM_ROWS):
         for col in range(NUM_COLS):
@@ -265,8 +284,10 @@ def astar_search(maze: list, start_pos: tuple):
                         # The following if condition is needed only when the heuristic is inadmissible otherwise a
                         # neighbour has to be in the sorted set if we are able to find out less value of f(n) for that
                         # particular neighbour
-                        if ((maze[neighbour[0]][neighbour[1]].f, maze[neighbour[0]][neighbour[1]].h,
-                             maze[neighbour[0]][neighbour[1]].g, node_to_random_number_mapping[neighbour]), neighbour) \
+                        if ((maze[neighbour[0]][neighbour[1]].f,
+                             maze[neighbour[0]][neighbour[1]].probability_of_being_blocked,
+                             maze[neighbour[0]][neighbour[1]].h, maze[neighbour[0]][neighbour[1]].g,
+                             node_to_random_number_mapping[neighbour]), neighbour) \
                                 in sorted_set:
                             sorted_set.remove(
                                 ((maze[neighbour[0]][neighbour[1]].f,
@@ -423,17 +444,33 @@ def multiple_plot(x, y, title, xlabel, ylabel, savefig_name, legends, fontsize: 
 
 
 def reset_probability_of_being_block_for_each_cell_after_execution(maze: list):
+    """
+    This function is helpful for the problem 5. This function resets the previous probabilities.
+    :param maze: Maze object
+    :return: Nothing as we are directly changing into maze object
+    """
+
+    # Initialize the current position so that we can use DFS and update probability of neighbor of each visited cell.
     current_position = STARTING_POSITION_OF_AGENT
+
+    # Use Queue for DFS and set to keep track visited cells
     visited_cells = set()
     queue = Queue()
     queue.put(current_position)
+    visited_cells.add(current_position)
+
+    # This loop will run until all visited cells are visited again
     while not queue.empty():
         current_position = queue.get()
 
+        # Resetting the probability of neighbor of current_position
         for neighbor in maze[current_position[0]][current_position[1]].eight_neighbors:
             if not maze[neighbor[0]][neighbor[1]].is_confirmed:
+                # print(maze[neighbor[0]][neighbor[1]].num_visited_neighbors)
                 maze[neighbor[0]][neighbor[1]].probability_of_being_blocked = 0
-                maze[neighbor[0]][neighbor[1]].num_visited_neighbors = 0
+                maze[neighbor[0]][neighbor[1]].min_hidden_cell_neighbor = INF
+
+        # Adding visited neighbor to the queue so that we can iterate it again
         for ind in range(len(X)):
             neighbor = (current_position[0] + X[ind], current_position[1] + Y[ind])
             if check(neighbor) and (neighbor not in visited_cells) and maze[neighbor[0]][neighbor[1]].is_visited:
@@ -442,59 +479,100 @@ def reset_probability_of_being_block_for_each_cell_after_execution(maze: list):
 
 
 def compute_probability_of_being_block_for_each_cell_after_execution(maze: list):
+    """
+    This function will compute probability of each valid cell and directly update in the maze.
+    :param maze: Maze object
+    :return: Nothing as we are directly updating in the maze object
+    """
+
+    # Reset previous probability before using it
     reset_probability_of_being_block_for_each_cell_after_execution(maze)
 
+    # Set current position from where we can use DFS
     current_position = STARTING_POSITION_OF_AGENT
+
+    # Initialize one set and queue for the DFS
     visited_cells = set()
     queue = Queue()
     queue.put(current_position)
+
+    # This loop will run until there is no cell left to be visited
     while not queue.empty():
         current_position = queue.get()
+
+        # Compute number of hidden cells and hidden block
         num_hidden_cells = maze[current_position[0]][current_position[1]].num_neighbor - \
                            (maze[current_position[0]][current_position[1]].num_confirmed_blocked +
                             maze[current_position[0]][current_position[1]].num_confirmed_unblocked)
         num_hidden_block = maze[current_position[0]][current_position[1]].num_sensed_blocked - \
                            maze[current_position[0]][current_position[1]].num_confirmed_blocked
 
+        assert maze[current_position[0]][current_position[1]].num_neighbor == \
+               (maze[current_position[0]][current_position[1]].num_sensed_blocked +
+                maze[current_position[0]][current_position[1]].num_sensed_unblocked)
+
+        # Add assert for the particular case so that we can make sure our code is working perfectly
+        if num_hidden_cells > 0:
+            assert num_hidden_block < num_hidden_cells
+            assert num_hidden_block > 0
+
+        num_unconfirmed_cells = 0
+        # Visit each unconfirmed neighbor of current cell and update it's probability if it's valid to update.
         for neighbor in maze[current_position[0]][current_position[1]].eight_neighbors:
-            if not maze[neighbor[0]][neighbor[1]].is_confirmed:
-                maze[neighbor[0]][neighbor[1]].probability_of_being_blocked += num_hidden_block / num_hidden_cells
-                maze[neighbor[0]][neighbor[1]].num_visited_neighbors += 1
+            if (not maze[neighbor[0]][neighbor[1]].is_confirmed) and \
+                    maze[neighbor[0]][neighbor[1]].min_hidden_cell_neighbor > num_hidden_cells:
+                num_unconfirmed_cells += 1
+                maze[neighbor[0]][neighbor[1]].probability_of_being_blocked = -1 * num_hidden_block / num_hidden_cells
+                maze[neighbor[0]][neighbor[1]].min_hidden_cell_neighbor = num_hidden_cells
+
+        assert num_unconfirmed_cells <= num_hidden_cells
+        # Add visited neighbor to queue to we can process again.
         for ind in range(len(X)):
             neighbor = (current_position[0] + X[ind], current_position[1] + Y[ind])
             if check(neighbor) and (neighbor not in visited_cells) and maze[neighbor[0]][neighbor[1]].is_visited:
                 queue.put(neighbor)
                 visited_cells.add(neighbor)
 
-    queue.queue.clear()
-    visited_cells.clear()
-    current_position = STARTING_POSITION_OF_AGENT
-
-    queue.put(current_position)
-
-    while not queue.empty():
-        current_position = queue.get()
-        for neighbor in maze[current_position[0]][current_position[1]].eight_neighbors:
-            if not maze[neighbor[0]][neighbor[1]].is_confirmed:
-                maze[neighbor[0]][neighbor[1]].probability_of_being_blocked = \
-                    maze[neighbor[0]][neighbor[1]].probability_of_being_blocked / \
-                    maze[neighbor[0]][neighbor[1]].num_visited_neighbors
-        for ind in range(len(X)):
-            neighbor = (current_position[0] + X[ind], current_position[1] + Y[ind])
-            if check(neighbor) and (neighbor not in visited_cells) and maze[neighbor[0]][neighbor[1]].is_visited:
-                queue.put(neighbor)
-                visited_cells.add(neighbor)
+    # queue.queue.clear()
+    # visited_cells.clear()
+    # current_position = STARTING_POSITION_OF_AGENT
+    #
+    # queue.put(current_position)
+    #
+    # while not queue.empty():
+    #     current_position = queue.get()
+    #     for neighbor in maze[current_position[0]][current_position[1]].eight_neighbors:
+    #         if not maze[neighbor[0]][neighbor[1]].is_confirmed:
+    #             maze[neighbor[0]][neighbor[1]].probability_of_being_blocked = \
+    #                 maze[neighbor[0]][neighbor[1]].probability_of_being_blocked / \
+    #                 maze[neighbor[0]][neighbor[1]].num_visited_neighbors
+    #     for ind in range(len(X)):
+    #         neighbor = (current_position[0] + X[ind], current_position[1] + Y[ind])
+    #         if check(neighbor) and (neighbor not in visited_cells) and maze[neighbor[0]][neighbor[1]].is_visited:
+    #             queue.put(neighbor)
+    #             visited_cells.add(neighbor)
 
 
 def add_constraint_to_knowledge_base(knowledge_base: list, variable_to_constraint_dict: dict, unconfirmed_cells: set,
                                      num_blocked_cells_in_unconfirmed_cells: int):
+    """
+    This function adds the given constraint to our knowledge base
+    :param knowledge_base: knowledge base where we add our information
+    :param variable_to_constraint_dict: dictionary where we maintain constraint index of knowledge base for each variable
+    :param unconfirmed_cells: set which we want to add in the knowledge base
+    :param num_blocked_cells_in_unconfirmed_cells: number of sensed block cells which are in the unconfirmed cell
+    :return: Nothing as we are directly updating in the objects
+    """
+
+    # If there is no element in the set, there is no point to add it in the knowledge base
     if len(unconfirmed_cells) == 0:
         return
 
-    for neighbor in unconfirmed_cells:
-        if neighbor not in variable_to_constraint_dict:
-            variable_to_constraint_dict[neighbor] = set()
-        variable_to_constraint_dict[neighbor].add(len(knowledge_base))
+    # visit each cell of unconfirmed_cells set update in variable to constraint dictionary
+    for cell in unconfirmed_cells:
+        if cell not in variable_to_constraint_dict:
+            variable_to_constraint_dict[cell] = set()
+        variable_to_constraint_dict[cell].add(len(knowledge_base))
 
     # Creating list instead of tuple so that we can update the value of list for each constraint
     knowledge_base.append([unconfirmed_cells, num_blocked_cells_in_unconfirmed_cells])
@@ -502,17 +580,31 @@ def add_constraint_to_knowledge_base(knowledge_base: list, variable_to_constrain
 
 def sense_current_node(maze, current_position: tuple, full_maze: np.array, knowledge_base=None,
                        variable_to_constraint_dict=None):
+    """
+    This function is used to sense the current node and update details in the knowledge base
+    :param maze: Maze object
+    :param current_position: position of the maze for which you want to sense
+    :param full_maze: full maze
+    :param knowledge_base: list which contains the knowledge base
+    :param variable_to_constraint_dict: variable to constraint dictionary
+    :return: Nothing as we are directly updating into maze object
+    """
+
+    # If the default argument is None then set empty list and set for variable
     if knowledge_base is None:
         knowledge_base = list()
 
     if variable_to_constraint_dict is None:
         variable_to_constraint_dict = dict()
 
+    # Create a set to store all variable in a constraint
     unconfirmed_cells = set()
     num_blocked_cells_in_unconfirmed_cells = 0
 
+    # Visit all eight neighbors and sense them
     for neighbor in maze[current_position[0]][current_position[1]].eight_neighbors:
 
+        # Update the status for confirm and non-confirm conditions
         if maze[neighbor[0]][neighbor[1]].is_confirmed:
             if maze[neighbor[0]][neighbor[1]].is_blocked:
                 maze[current_position[0]][current_position[1]].num_confirmed_blocked += 1
@@ -521,6 +613,8 @@ def sense_current_node(maze, current_position: tuple, full_maze: np.array, knowl
                 maze[current_position[0]][current_position[1]].num_confirmed_unblocked += 1
                 maze[current_position[0]][current_position[1]].num_sensed_unblocked += 1
         else:
+
+            # Adding this to set so that we can add it to our knowledge base
             unconfirmed_cells.add(neighbor)
 
             if full_maze[neighbor[0]][neighbor[1]] == 1:
@@ -528,11 +622,19 @@ def sense_current_node(maze, current_position: tuple, full_maze: np.array, knowl
                 maze[current_position[0]][current_position[1]].num_sensed_blocked += 1
             else:
                 maze[current_position[0]][current_position[1]].num_sensed_unblocked += 1
+
+    # Add this constraint to our knowledge base
     add_constraint_to_knowledge_base(knowledge_base, variable_to_constraint_dict, unconfirmed_cells,
                                      num_blocked_cells_in_unconfirmed_cells)
 
 
 def check_constraint(variables_set: set, value: int):
+    """
+    This function is used to check whether the given constrain is valid of not
+    :param variables_set: variables of the constraint
+    :param value: value of the given constraint
+    :return: True if the constraint can be satisfied otherwise False
+    """
     if (len(variables_set) < value) or (value < 0):
         return False
     return True
@@ -541,19 +643,40 @@ def check_constraint(variables_set: set, value: int):
 def backtracking_search(current_variable_index: int, total_num_variables: int, variables: list,
                         assigned_values_each_variable: dict, frequency_of_each_output_for_each_variable: dict,
                         knowledge_base: list, variable_to_constraint_dict: dict, most_constraint_variable: tuple):
+    """
+    This function is used for backtracking search. It will recursively take the value of each variable from the domain
+    and try to find possible answers.
+    :param current_variable_index: index of the current variable index
+    :param total_num_variables: total number of indexes for the backtrack
+    :param variables: list of variable in the given constraints
+    :param assigned_values_each_variable: to keep track of assigned value for each variable
+    :param frequency_of_each_output_for_each_variable: to keep track the frequency of valid outputs
+    :param knowledge_base: our knowledge base
+    :param variable_to_constraint_dict: dictionary which can give you list of index of constrain where the given
+            variable is in the knowledge base
+    :param most_constraint_variable: one variable which has most constraint in the given knowledge base
+    :return: Nothing as we are directly updating in the objects
+    """
     # Condition when all the constraints are satisfied with the given set of values
     if current_variable_index == total_num_variables:
+
+        # Increase frequency by one for each valid set
         for variable in assigned_values_each_variable:
             if variable not in frequency_of_each_output_for_each_variable:
                 frequency_of_each_output_for_each_variable[variable] = [0, 0]
             frequency_of_each_output_for_each_variable[variable][assigned_values_each_variable[variable]] += 1
         return
 
+    # Loop over the all values which are in the domain.
     for value in [0, 1]:
+
+        # Assign the value to that particular variable
         assigned_values_each_variable[variables[current_variable_index]] = value
 
         is_current_value_satisfied_all_constraints = True
         list_of_constraint_index_for_variable = list()
+
+        # Iterate over all the constraints from the knowledge base and make it solved.
         for constraint_index in variable_to_constraint_dict[most_constraint_variable]:
             if variables[current_variable_index] in knowledge_base[constraint_index][0]:
                 list_of_constraint_index_for_variable.append(constraint_index)
@@ -562,11 +685,13 @@ def backtracking_search(current_variable_index: int, total_num_variables: int, v
                 if not check_constraint(knowledge_base[constraint_index][0], knowledge_base[constraint_index][1]):
                     is_current_value_satisfied_all_constraints = False
 
+        # If all constrains are satisfied after giving value to the variable, run backtracking search
         if is_current_value_satisfied_all_constraints:
             backtracking_search(current_variable_index + 1, total_num_variables, variables,
                                 assigned_values_each_variable, frequency_of_each_output_for_each_variable,
                                 knowledge_base, variable_to_constraint_dict, most_constraint_variable)
 
+        # reverse the changes which we made earlier
         for constraint_index in list_of_constraint_index_for_variable:
             knowledge_base[constraint_index][0].add(variables[current_variable_index])
             knowledge_base[constraint_index][1] += value
@@ -574,9 +699,22 @@ def backtracking_search(current_variable_index: int, total_num_variables: int, v
 
 def most_constraint_variable_list(variable_to_constraint_dict: dict, want_to_use_probability_approach: bool,
                                   maze: list):
+    """
+    Find the list of most constraint variables
+    :param variable_to_constraint_dict: dictionary containing key value pair of variable to index of constraint in
+            knowledge base
+    :param want_to_use_probability_approach: if you want to get list based on probability then set it to True otherwise
+            it should be False
+    :param maze: Maze object
+    :return: list containing most constraint variables
+    """
+
+    # If you want to get most constraint variable based on probability
     if want_to_use_probability_approach:
         max_probability = 0
         cells_with_same_highest_probability = list()
+
+        # Iterate over variable, find probability and update correspondingly
         for variable in variable_to_constraint_dict:
             probability = len(variable_to_constraint_dict[variable]) / maze[variable[0]][variable[1]].num_neighbor
             if max_probability < probability:
@@ -588,6 +726,8 @@ def most_constraint_variable_list(variable_to_constraint_dict: dict, want_to_use
 
         return cells_with_same_highest_probability
 
+    # Otherwise else would look at the absolute value of most constraint variables choose those variables which are in
+    # most number of constraints
     else:
         cells_which_are_most_constraint_variable = list()
         max_num_constraint = 0
@@ -604,6 +744,13 @@ def most_constraint_variable_list(variable_to_constraint_dict: dict, want_to_use
 
 def make_inference_from_most_constraint_variable(knowledge_base: list, variable_to_constraint_dict: dict,
                                                  most_constraint_variable: tuple):
+    """
+
+    :param knowledge_base:
+    :param variable_to_constraint_dict:
+    :param most_constraint_variable:
+    :return:
+    """
     constraints_containing_most_constraint_variable_set = set()
     constraints_containing_most_constraint_variable_list = list()
     current_constraint_list = list()
