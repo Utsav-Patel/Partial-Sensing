@@ -1,0 +1,25 @@
+-- src
+
+		-- Agent.py (This file contains the main agent class which is parent of all agent class)
+		
+		-- Cell.py (This file contains the cell class)
+		
+		-- helper.py (This helper file contains all the main helper functions which we have used in our project)
+		
+		-- TheBlindfoldedAgent.py (This file contains the class for the blindfolded agent)
+		
+		-- TheFourNeighborAgent.py (This file contains the class for four neighbor agent)
+		
+		-- TheExampleInferenceAgent.py (This file contains the class for example inference agent)
+		
+		-- OurOwnInferenceAgent.py (This file contains the class for our own inference agent)
+		
+-- tests
+
+		-- test1.py (This is the test file for agent 3)
+		
+		-- test2.py (This is the test file for agent 4)
+		
+		-- test3.py (This is the test file for agent 5)
+
+-- constants.py (Constants for our project)
