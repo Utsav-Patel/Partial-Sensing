@@ -225,6 +225,8 @@ def astar_search(maze: list, start_pos: tuple):
 
     # Initialize a sorted set to pop least value element from the set
     sorted_set = SortedSet()
+    
+    
 
     # Initialize a dictionary to store a random value assigned to each node. This dictionary would be helpful to know
     # the value of a node when we want to remove a particular node from the sorted set
@@ -321,7 +323,7 @@ def astar_search(maze: list, start_pos: tuple):
     return parents, num_explored_nodes
 
 
-def forward_execution(maze: list, maze_array: np.array, start_pos: tuple, parents: dict,
+def forward_execution(maze: list, maze_array: np.array, start_pos: tuple, goal_pos: tuple, parents: dict,
                       want_to_explore_field_of_view: bool, is_backtrack_strategy_on: bool = False):
     """
     This is the repeated forward function which can be used with any algorithm (astar or bfs). This function will
@@ -337,7 +339,7 @@ def forward_execution(maze: list, maze_array: np.array, start_pos: tuple, parent
     """
 
     num_backtracks = 0
-
+    GOAL_POSITION_OF_AGENT = goal_pos
     children = parent_to_child_dict(parents, GOAL_POSITION_OF_AGENT)
 
     # Setting current position to starting position so we can start iterating from start_pos
